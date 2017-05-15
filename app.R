@@ -148,8 +148,8 @@ change_sign <- function(vector) {
 dark_plot_rect <- function(initial_phase_no, len, dark_intervals) {
   st <- seq(from = initial_phase_no, to = len, by = 2*dark_intervals) - 0.5
   en <- seq(from = initial_phase_no + dark_intervals, to = len, by = 2*dark_intervals) - 0.5
-  print(st)
-  print(en)
+  #print(st)
+  #print(en)
   return(data.frame(start = st, end = en))
 }
 
@@ -336,6 +336,7 @@ server <- shinyServer(function(input, output) {
     file <- input$file1
     ext <- tools::file_ext(file)[1]
     
+    #print(ext)
     # if file is not uploaded provide temp file to show results
     if(is.null(file)) {
       file <- read_excel("temp.xlsx")
@@ -347,6 +348,7 @@ server <- shinyServer(function(input, output) {
       # needs to extract extension from file and the rename
       file.rename(file$datapath,
                   paste(file$datapath, ext, sep="."))
+      
       #TODO if separator is decimal point, it doesn't work
       #TODO if it is csv - read csv
       
@@ -552,7 +554,7 @@ server <- shinyServer(function(input, output) {
     # add ID and TIME columns and convert to data frame
     phase <- plot_data[1]
     plot_data[1] <- NULL
-    print(plot_data)
+    #print(plot_data)
     names(plot_data)[1] <- "id"
     plot_data_melt <- melt(plot_data, id.vars = c("id"))
     
