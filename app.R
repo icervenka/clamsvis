@@ -1,7 +1,5 @@
 # CLAMS-VIS app
 # TODO implement night start, night length
-# TODO implement accumulation for all parameters - will solve the problem with food accumulation starting differently for different experiments
-# TODO implement VO2/VCO2 normalized by body weight
 # TODO implement non agregated measurements
 # TODO fix column shift in excel output
 
@@ -31,12 +29,12 @@ nameParameterMap <- as.data.frame(matrix( data = c(
   c("Feed_Weight_1", "Food weight"),
   c("Y_Total", "Y total movement"),
   c("Y_Ambulatory", "Y ambulatory movement"),
-  c("Feed_Acc_1", "Food weight accumulation"),
+  #c("Feed_Acc_1", "Food weight accumulation"),
   c("X_Total", "X total movement"),
   c("Heat", "Heat"),
   c("Volume_O2", "O2 volume"),
   c("Drink_Weight_1", "Drink volume"),
-  c("Drink_Acc_1", "Drink volume accumulation"),
+  #c("Drink_Acc_1", "Drink volume accumulation"),
   c("XY_Ambulatory", "XY ambulatory movement"),
   c("X_Non_Ambulatory", "X non-ambulatory movement"),
   c("Y_Non_Ambulatory", "Y non-ambulatory movement")
@@ -284,6 +282,11 @@ ui <- shinyUI(fluidPage(
         selectInput("timeAggregation", "Select time aggregation [hrs]", c(1, 2, 3, 4, 6, 12), selected = 1)
       ),
       
+      conditionalPanel(
+        condition = "input.tabs1 == 'Time' | input.tabs1 == 'Means'",
+        checkboxInput("cumulative", "Show cumulative data")
+      ),
+      
       tags$hr(),
       
       downloadButton("download", "Download data"),
@@ -350,8 +353,6 @@ server <- shinyServer(function(input, output) {
                   paste(file$datapath, ext, sep="."))
       
       #TODO if separator is decimal point, it doesn't work
-      #TODO if it is csv - read csv
-      
       file <- read_excel(paste(file$datapath, ext, sep="."))
     }
     
@@ -381,7 +382,7 @@ server <- shinyServer(function(input, output) {
     names(subject_order) <- sort(subs)
     
     # variable expressing offset in columns of another aggregation of time series when exporting to excel file
-    globalValues$exp_column_offset <- length(subject_order) + 2
+    globalValues$exp_column_offset <- length(subject_order) + 3
     
     #split file into list of individual subjects
     subjects <- split(file, file$Subject)
@@ -430,8 +431,6 @@ server <- shinyServer(function(input, output) {
     # calculate time interval in minutes
     #time_interval_min <- as.numeric(difftime(date_time[2], date_time[1]))
     time_interval_min <- round(as.numeric(tms[2] - tms[1])*24*60)
-    
-    
     
     
     # calculate aggregator times in hours by taking common factors of day and night durations
@@ -542,6 +541,9 @@ server <- shinyServer(function(input, output) {
   output$timePlot <- renderPlot({
     results <- resultsInput()
     
+
+    results_cum <- lapply(results, function (x) {lapply(x, function (y) {cbind.data.frame(y[1:2], cumsum(y[3:length(colnames(y))]))})})
+    
     # index that selects paramter based on selection from UI
     indd_i <- nameParameterMap[which(nameParameterMap$name == input$parameterSelect), 1]
     
@@ -549,7 +551,14 @@ server <- shinyServer(function(input, output) {
     indd_j <- match(as.numeric(input$timeAggregation), globalValues$com_fact)
 
     # create data frame based on selected indices
-    plot_data <- data.frame(results[[indd_i]][[indd_j]], check.names = FALSE)
+    # display normal time course or cumulative sums if the cumulative tickbox is selected
+    if(input$cumulative == FALSE) {
+      plot_data <- data.frame(results[[indd_i]][[indd_j]], check.names = FALSE)
+    } else {
+      plot_data <- data.frame(results_cum[[indd_i]][[indd_j]], check.names = FALSE)
+    }
+    
+    #plot_data <- data.frame(results[[indd_i]][[indd_j]], check.names = FALSE)
     
     # add ID and TIME columns and convert to data frame
     phase <- plot_data[1]
