@@ -521,7 +521,7 @@ server <- shinyServer(function(input, output) {
         for(j in seq_along(results[[i]])) {
           # displace next time aggregation by offset equal to number of subjects + date + empty column
           # data starts on row 2
-          addDataFrame(results[[i]][[j]], sheet, startRow = 2, startCol = (globalValues$exp_column_offset*j - (globalValues$exp_column_offset-1)))
+          addDataFrame(results[[i]][[j]][,-2], sheet, startRow = 2, startCol = (globalValues$exp_column_offset*j - (globalValues$exp_column_offset-1)))
         }
         
         row <- createRow(sheet = sheet, rowIndex = 1) # create empty header row to display time aggregations
