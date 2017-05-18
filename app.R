@@ -1,7 +1,7 @@
 # CLAMS-VIS app
 # TODO implement night start, night length
 # TODO implement non agregated measurements
-# TODO fix column shift in excel output
+# TODO if separator is decimal point, it doesn't work
 
 library(shiny)
 library(pryr)
@@ -29,12 +29,10 @@ nameParameterMap <- as.data.frame(matrix( data = c(
   c("Feed_Weight_1", "Food weight"),
   c("Y_Total", "Y total movement"),
   c("Y_Ambulatory", "Y ambulatory movement"),
-  #c("Feed_Acc_1", "Food weight accumulation"),
   c("X_Total", "X total movement"),
   c("Heat", "Heat"),
   c("Volume_O2", "O2 volume"),
   c("Drink_Weight_1", "Drink volume"),
-  #c("Drink_Acc_1", "Drink volume accumulation"),
   c("XY_Ambulatory", "XY ambulatory movement"),
   c("X_Non_Ambulatory", "X non-ambulatory movement"),
   c("Y_Non_Ambulatory", "Y non-ambulatory movement")
@@ -92,14 +90,6 @@ add_to_char_vector <- function(vec, item) {
   return(vec)
 }
 
-
-# aligned_time_series <- function(to_time, time_interval_min, total_len, init_len) {
-#   time1 <- sort(seq(to_time, by = -1*time_interval_min*60, length.out = init_len + 1))
-#   time2 <- seq(to_time, by = time_interval_min*60, length.out = (total_len - init_len))
-#   return(c(head(time1, n=-1), time2))
-# }
-
-
 # create intervals for different time aggregations
 agg_time <- function(x, init_crop, intervals, records_count) {
   c(rep(1, each = (init_crop[x] - 1)), rep(2:(records_count/intervals[x]+2), each = intervals[x]))[1:records_count]
@@ -146,8 +136,6 @@ change_sign <- function(vector) {
 dark_plot_rect <- function(initial_phase_no, len, dark_intervals) {
   st <- seq(from = initial_phase_no, to = len, by = 2*dark_intervals) - 0.5
   en <- seq(from = initial_phase_no + dark_intervals, to = len, by = 2*dark_intervals) - 0.5
-  #print(st)
-  #print(en)
   return(data.frame(start = st, end = en))
 }
 
@@ -323,13 +311,6 @@ server <- shinyServer(function(input, output) {
     })
   })
   
-  
-  # output$fileUploaded <- reactive({
-  #   return(!is.null(resultsInput()))
-  # })
-  # 
-  # outputOptions(output, 'fileUploaded', suspendWhenHidden=FALSE)
-  
   #globally accessible reactive values
   globalValues <- reactiveValues()
   
@@ -339,7 +320,6 @@ server <- shinyServer(function(input, output) {
     file <- input$file1
     ext <- tools::file_ext(file)[1]
     
-    #print(ext)
     # if file is not uploaded provide temp file to show results
     if(is.null(file)) {
       file <- read_excel("temp.xlsx")
@@ -351,8 +331,6 @@ server <- shinyServer(function(input, output) {
       # needs to extract extension from file and the rename
       file.rename(file$datapath,
                   paste(file$datapath, ext, sep="."))
-      
-      #TODO if separator is decimal point, it doesn't work
       file <- read_excel(paste(file$datapath, ext, sep="."))
     }
     
@@ -558,12 +536,10 @@ server <- shinyServer(function(input, output) {
       plot_data <- data.frame(results_cum[[indd_i]][[indd_j]], check.names = FALSE)
     }
     
-    #plot_data <- data.frame(results[[indd_i]][[indd_j]], check.names = FALSE)
     
     # add ID and TIME columns and convert to data frame
     phase <- plot_data[1]
     plot_data[1] <- NULL
-    #print(plot_data)
     names(plot_data)[1] <- "id"
     plot_data_melt <- melt(plot_data, id.vars = c("id"))
     
@@ -646,7 +622,6 @@ server <- shinyServer(function(input, output) {
       plot_df <- add_id_time(plot_df)
       
       # generate rectangle coordinates to display 'Dark/Light' phases in the background of the graph
-      #rect_start <- first_n_ocurrence(unname(vapply(plot_df$time, date_to_phase_par, character(1)))) + 1
       rect_start <- first_n_ocurrence(unlist(phase)) + 1
       rects <- dark_plot_rect(rect_start, dim(plot_df)[1], (12/globalValues$com_fact[indd_j]))
       
