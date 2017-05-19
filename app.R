@@ -1,5 +1,4 @@
 # CLAMS-VIS app
-# TODO implement night start, night length
 # TODO implement non agregated measurements
 # TODO if separator is decimal point, it doesn't work
 
@@ -66,7 +65,6 @@ graph_height = 650
 #common options for graph appearance
 graph_options <- list(xlab(""), ylab(""), geom_line(size=1.05), theme(legend.text=element_text(size=16), legend.key.size = unit(0.7, "cm"), axis.text = element_text(size = 12)))
 
-night_start= 18
 night_duration = 12
 
 # ************************************************
@@ -258,6 +256,8 @@ ui <- shinyUI(fluidPage(
         uiOutput("groupChar")
       ),
       
+      textInput("night_start", label = "Night Start", value = "18:00:00"),
+      
       tags$hr(),
       
       # parameter selector
@@ -334,6 +334,10 @@ server <- shinyServer(function(input, output) {
       file <- read_excel(paste(file$datapath, ext, sep="."))
     }
     
+    # add night start input
+    # this is only used to prettify time data, has no effect on Dark/Light phase
+    globalValues$night_start = input$night_start
+    
     # sanitize headers for easier processing
     names(file) <- sanitize_header_string(names(file))
     file$Subject <- sanitize_header_string(file$Subject)
@@ -397,7 +401,8 @@ server <- shinyServer(function(input, output) {
     tms <- chron(times. = times(format(strptime(dttm[,2], "%I:%M:%S %p"), format = '%H:%M:%S')))
     
     first_phase_change_dt <- tms[min(light_dark) + 1 ]
-    phase_change_time <- paste(night_start, "00", "00", sep = ":")
+    # phase_change_time <- paste(night_start, "00", "00", sep = ":")
+    phase_change_time = globalValues$night_start
     
     # calculate prettified date-time object for first phase change
     tms <- tms - as.character(first_phase_change_dt - phase_change_time)
