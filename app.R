@@ -65,6 +65,7 @@ graph_height = 650
 #common options for graph appearance
 graph_options <- list(xlab(""), ylab(""), geom_line(size=1.05), theme(legend.text=element_text(size=16), legend.key.size = unit(0.7, "cm"), axis.text = element_text(size = 12)))
 
+night_start = "19:00:00"
 night_duration = 12
 
 # ************************************************
@@ -256,7 +257,7 @@ ui <- shinyUI(fluidPage(
         uiOutput("groupChar")
       ),
       
-      textInput("night_start", label = "Night Start", value = "18:00:00"),
+      # textInput("night_start", label = "Night Start", value = "18:00:00"),
       
       tags$hr(),
       
@@ -336,7 +337,7 @@ server <- shinyServer(function(input, output) {
     
     # add night start input
     # this is only used to prettify time data, has no effect on Dark/Light phase
-    globalValues$night_start = input$night_start
+    globalValues$night_start = night_start
     
     # sanitize headers for easier processing
     names(file) <- sanitize_header_string(names(file))
@@ -401,8 +402,9 @@ server <- shinyServer(function(input, output) {
     tms <- chron(times. = times(format(strptime(dttm[,2], "%I:%M:%S %p"), format = '%H:%M:%S')))
     
     first_phase_change_dt <- tms[min(light_dark) + 1 ]
-    # phase_change_time <- paste(night_start, "00", "00", sep = ":")
-    phase_change_time = globalValues$night_start
+    
+    # phase_change_time = globalValues$night_start
+    phase_change_time <- paste(chron::hours(first_phase_change_dt), "00", "00", sep = ":")
     
     # calculate prettified date-time object for first phase change
     tms <- tms - as.character(first_phase_change_dt - phase_change_time)
@@ -412,9 +414,7 @@ server <- shinyServer(function(input, output) {
     date_time <- format(date_time, "%d/%m/%Y %H:%M:%S", enclosed = c("", ""))
     
     # calculate time interval in minutes
-    #time_interval_min <- as.numeric(difftime(date_time[2], date_time[1]))
     time_interval_min <- round(as.numeric(tms[2] - tms[1])*24*60)
-    
     
     # calculate aggregator times in hours by taking common factors of day and night durations
     globalValues$com_fact <- Reduce(intersect, list(factors(night_duration), factors(24), factors(24-night_duration)))
