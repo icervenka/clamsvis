@@ -3,7 +3,6 @@
 # TODO if separator is decimal point, it doesn't work
 
 library(shiny)
-library(pryr)
 library(dplyr)
 library(reshape2)
 library(stringr)
@@ -14,6 +13,7 @@ library(chron)
 library(lubridate)
 library(ggplot2)
 
+options(shiny.maxRequestSize = 20*1024^2)
 
 # ************************************************
 # constants
@@ -21,20 +21,20 @@ library(ggplot2)
 
 # map of parameter names to text outputs in shiny UI selection box
 nameParameterMap <- as.data.frame(matrix( data = c( 
-  c("X_Ambulatory", "X ambulatory movement"),
+  c("Volume_O2", "O2 volume"),
   c("Volume_CO2", "CO2 volume"),
-  c("Z_Total", "Z total movement"),
   c("RER", "Resting energy rate"),
+  c("Heat", "Heat"),
   c("Feed_Weight_1", "Food weight"),
+  c("Drink_Weight_1", "Drink volume"),
+  c("X_Total", "X total movement"),
+  c("X_Ambulatory", "X ambulatory movement"),
   c("Y_Total", "Y total movement"),
   c("Y_Ambulatory", "Y ambulatory movement"),
-  c("X_Total", "X total movement"),
-  c("Heat", "Heat"),
-  c("Volume_O2", "O2 volume"),
-  c("Drink_Weight_1", "Drink volume"),
-  c("XY_Ambulatory", "XY ambulatory movement"),
+  c("Z_Total", "Z total movement"),
   c("X_Non_Ambulatory", "X non-ambulatory movement"),
-  c("Y_Non_Ambulatory", "Y non-ambulatory movement")
+  c("Y_Non_Ambulatory", "Y non-ambulatory movement"),
+  c("XY_Ambulatory", "XY ambulatory movement")
   ), ncol = 2, byrow = TRUE
 ), stringsAsFactors = FALSE)
 
@@ -183,7 +183,7 @@ gen_agg_parameter <- function(dat, func, phase_vec, int_df) {
 # generates hour-by-hour aggregations for supplied measured parameter
 # ignores data from fasting-refeeding periods
 gen_hour_agg <- function(data, fasting_index, initial_start) {
-  return(as.data.frame(t(sapply(0:23, function(x) {colMeans(filter(data, hour == x, row_number() < fasting_index & row_number() >= initial_start))}))))
+  return(as.data.frame(t(sapply(0:23, function(x) {colMeans(filter(data, hour == x, dplyr::row_number() < fasting_index & dplyr::row_number() >= initial_start))}))))
 }
 
 
@@ -198,7 +198,7 @@ gen_results <- function(dat, agg_function_vec, ...) {
 # generates summary data frame by averaging selected groups of columns
 group_data <- function(plot_data, columns) {
   df <- do.call(cbind, lapply(1:length(columns), function(x) {
-    data.frame(rowMeans(select(plot_data, matches(columns[x])
+    data.frame(rowMeans(dplyr::select(plot_data, matches(columns[x])
     )))
   }))
   return(df)
@@ -374,7 +374,7 @@ server <- shinyServer(function(input, output) {
     # compute number of measurements in the initial Light/Dark phase for individual subjects
     light_dark <-
       sapply(sapply(subjects, function (x) {
-        select(x, 4)
+        dplyr::select(x, 4)
       }), first_n_ocurrence)
     
     # create vectors for removing initial and end elements from time series that don't have corresponding values in all subjects
@@ -455,7 +455,7 @@ server <- shinyServer(function(input, output) {
     
     
     for(i in 1:length(data_column_index)) {
-      dat_frame[[header[data_column_index[i]]]] <- do.call(cbind.data.frame, lapply(subjects, function (x) {select(x, data_column_index[i])}))
+      dat_frame[[header[data_column_index[i]]]] <- do.call(cbind.data.frame, lapply(subjects, function (x) {dplyr::select(x, data_column_index[i])}))
       names(dat_frame[[i]]) <- names(subject_order)
     }
     
@@ -495,16 +495,17 @@ server <- shinyServer(function(input, output) {
     
     content = function(file){
       results <- resultsInput()
-      
+      results_cum <- lapply(results, function (x) {lapply(x, function (y) {cbind.data.frame(y[1:2], cumsum(y[3:length(colnames(y))]))})})
+      results_cum = results
       clams_wb <- createWorkbook()
       
       # put data into individual sheets with one parameter per sheet and time aggregations side by side
-      for (i in seq_along(names(results))) {
-        sheet <- createSheet(clams_wb, sheetName = names(results)[i])
-        for(j in seq_along(results[[i]])) {
+      for (i in seq_along(names(results_cum))) {
+        sheet <- createSheet(clams_wb, sheetName = names(results_cum)[i])
+        for(j in seq_along(results_cum[[i]])) {
           # displace next time aggregation by offset equal to number of subjects + date + empty column
           # data starts on row 2
-          addDataFrame(results[[i]][[j]][,-2], sheet, startRow = 2, startCol = (globalValues$exp_column_offset*j - (globalValues$exp_column_offset-1)))
+          addDataFrame(results_cum[[i]][[j]][,-2], sheet, startRow = 2, startCol = (globalValues$exp_column_offset*j - (globalValues$exp_column_offset-1)))
         }
         
         row <- createRow(sheet = sheet, rowIndex = 1) # create empty header row to display time aggregations
@@ -583,6 +584,7 @@ server <- shinyServer(function(input, output) {
   # render plot for comparing means
   output$meanPlot <- renderPlot({
     results <- resultsInput()
+    results_cum <- lapply(results, function (x) {lapply(x, function (y) {cbind.data.frame(y[1:2], cumsum(y[3:length(colnames(y))]))})})
     
     # index that selects paramter based on selection from UI
     indd_i <- nameParameterMap[which(nameParameterMap$name == input$parameterSelect), 1]
@@ -591,7 +593,13 @@ server <- shinyServer(function(input, output) {
     
     # create temporary data frame which contais all the data for selected parameter and time aggregation
     # coercion from zoo object to facilitate the column selection
-    plot_data <- data.frame(results[[indd_i]][[indd_j]], check.names = FALSE)
+    if(input$cumulative == FALSE) {
+      plot_data <- data.frame(results[[indd_i]][[indd_j]], check.names = FALSE)
+    } else {
+      plot_data <- data.frame(results_cum[[indd_i]][[indd_j]], check.names = FALSE)
+    }
+    
+    #plot_data <- data.frame(results[[indd_i]][[indd_j]], check.names = FALSE)
     
     phase <- plot_data[1]
     # number of dynamically generated inputs for means calculation
@@ -611,7 +619,7 @@ server <- shinyServer(function(input, output) {
     if(length(columns) == 0) {
       group_count <- 0
     } else {
-      group_count <- sum(sapply(1:length(columns), function(x) {dim(select(plot_data, matches(columns[x])))[2]}))
+      group_count <- sum(sapply(1:length(columns), function(x) {dim(dplyr::select(plot_data, matches(columns[x])))[2]}))
     }
 
     if(group_count > 0) {
