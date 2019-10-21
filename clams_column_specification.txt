@@ -1,0 +1,23 @@
+display_app	name_app	name_tse	name_classic	type_py	type_R	aggregate
+Subject	subject	Animal No.	CHAN	string	character	NA
+Interval	interval	NA	INTERVAL	int	numeric	NA
+Date-Time	date-time	NA	DATE/TIME	string	character	NA
+NA	NA	Date	NA	string	character	NA
+NA	NA	Time	NA	string	character	NA
+Temperature	temp	TempC	TEMP AMB	float	double	mean
+Light	light	LightC	ROOM LIGHT	int	numeric	mean
+VO2	vo2	VO2(1)	VO2	float	double	mean
+VCO2	vco2	VCO2(1)	VCO2	float	double	mean
+RER	rer	RER	RER	float	double	mean
+Heat	heat	H(1)	HEAT	float	double	mean
+XY Total Movement	xyt	XT+YT	NA	int	numeric	sum
+X Total Movement	xt	XT	XTOT	int	numeric	sum
+X Ambulatory Movement	xa	XA	XAMB	int	numeric	sum
+X F Movement	xf	XF	NA	int	numeric	sum
+Y Total Movement	yt	YT	YTOT	int	numeric	sum
+Y Ambulatory Movement	ya	YA	YAMB	int	numeric	sum
+Y F Movement	yf	YF	NA	int	numeric	sum
+Z Movement	z	Z	ZTOT	int	numeric	sum
+Drink	drink	Drink	DRINK1	float	double	mean
+Feed	feed	Feed	FEED1	float	double	mean
+Events	events	NA	NA	string	character	NA
