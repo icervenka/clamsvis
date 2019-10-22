@@ -1,66 +1,90 @@
 # imports ------------------------------------------------
 library(shiny)
-library(dplyr)
 library(stringr)
 library(readr)
-library(xlsx)
+#library(xlsx)
 library(ggplot2)
 library(readr)
 library(purrr)
 library(tidyverse)
 library(numbers)
-library(rJava)
+#library(rJava)
 library(reshape2)
 library(matrixStats)
+library(dplyr)
+library(chron)
+library(lubridate)
+library(broom)
 
 # options ------------------------------------------------
 options(shiny.maxRequestSize = 20*1024^2)
 options(java.parameters = "-Xmx2048m")
 
 # functions -----------------------------------------------
-# create_aggregation_vector = function(length, each) {
-#   # vec = map_dfc(repeats, function(x) {
-#   #   c(rep(NA, skip_start-1), rep(1:length, each = x, length.out = length+1))
-#   # })
-#   vec = c(rep(1:length, each = each, length.out = length))
-#   return(vec)
-# }
-
 create_aggregation_vector = function(each, length) {
-  # vec = map_dfc(repeats, function(x) {
-  #   c(rep(NA, skip_start-1), rep(1:length, each = x, length.out = length+1))
-  # })
   vec = c(rep(1:length, each = each, length.out = length))
   return(vec)
 }
 
 aggregate_parameter = function(data, subject, aggregation, parameter = "vo2", time = "t360", by = "mean", cumulative = FALSE) {
-  tmp = aggregate(data %>% dplyr::select(parameter), aggregation %>% dplyr::select(time), by)
+  tmp = aggregate(data %>% dplyr::select(light, parameter), aggregation %>% dplyr::select(time), by)
+  names(tmp) = c("interval", "light", "parameter")
   if(cumulative == TRUE) {
-    tmp = cbind.data.frame(tmp %>% dplyr::select(1), tmp %>% dplyr::select(-1) %>% cumsum)
+    tmp = cbind.data.frame(tmp %>% dplyr::select(-parameter), tmp %>% dplyr::select(parameter) %>% cumsum)
   }
   return(cbind.data.frame(tmp, subject, stringsAsFactors = F))
 }
 
-group_aggregate_paramter = function(data, aggregation, parameter = "vo2", time = "t360", by = mean, cumulative = FALSE) {
-  tmp = data %>% select(subject, cropped) %>% unnest(cropped) %>% select(subject, interval, light, parameter)
-  cast_tmp = dcast(tmp, interval + light ~ subject, value.var = parameter)
-  agg_tmp = aggregate(cast_tmp[,-c(1,2)], aggregation %>% select(time), by)
-  return(agg_tmp)
+parse_group_inputs = function(inp) {
+  
+  group_list = lapply(1:as.integer(inp$select_no_groups), function(x) {
+    inp[[paste0("group_no_", x)]]
+  })
+  
+  group_list[sapply(group_list, is.null)] <- list("")
+  group_list <- group_list[group_list != ""]
+  
+  group_list <- rapply(lapply(group_list, strsplit, ","), str_trim, how = "list") %>%
+    lapply(unlist)
+  
+  if(length(group_list) > 0) {
+    group_df = map_dfr(1:length(group_list), function(x) {
+      cbind.data.frame(subject = group_list[[x]], group =  paste0("Group", x), stringsAsFactors = FALSE)
+    })
+  } else {
+    group_df = data.frame()
+  }
+  
+  return(group_df)
 }
 
-group_means = function(aggregated_df, groups) {
-  group_tmp = map_dfr(groups, function(x) {
-    tmp_mean = aggregated_df %>% select(x) %>% rowMeans
-    tmp_sd = aggregated_df %>% select(x) %>% as.matrix %>% rowSds
-    grp_name = paste(x, collapse = '|')
-    cbind.data.frame(interval = aggregated_df[,1], mean = tmp_mean, sd = tmp_sd, group = grp_name, stringsAsFactors = F)
-  })
-}
+# group_aggregate_paramter = function(data, aggregation, parameter = "vo2", time = "t360", by = mean, cumulative = FALSE) {
+#   tmp = data %>% select(subject, cropped) %>% unnest(cropped) %>% select(subject, interval, light, parameter)
+#   cast_tmp = dcast(tmp, interval + light ~ subject, value.var = parameter)
+#   light_tmp = aggregate(cast_tmp %>% dplyr::select(light), aggregation %>% select(time), first)
+#   agg_tmp = aggregate(cast_tmp[,-c(1,2)], aggregation %>% select(time), by)
+#   agg_tmp = merge(agg_tmp, light_tmp)
+#   return(agg_tmp)
+# }
+# 
+# group_means = function(aggregated_df, groups) {
+#   group_tmp = map_dfr(groups, function(x) {
+#     tmp_mean = aggregated_df %>% select(x) %>% rowMeans
+#     tmp_sd = aggregated_df %>% select(x) %>% as.matrix %>% rowSds
+#     grp_name = paste(x, collapse = '|')
+#     cbind.data.frame(interval = aggregated_df[,1], mean = tmp_mean, sd = tmp_sd, group = grp_name, stringsAsFactors = F)
+#   })
+# }
 
 aggregate_by = function(parameter) {
   by = column_specs %>% dplyr::filter(name_app == select_param) %>% dplyr::select(aggregate) %>% as.character
   return(by)
+}
+
+min.mean.sd.max <- function(x) {
+  r <- c(min(x), mean(x) - sd(x), mean(x), mean(x) + sd(x), max(x))
+  names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+  r
 }
 
 # constants -----------------------------------------------
@@ -76,8 +100,7 @@ fasting <- "Fasting"
 refeeding <- "Refeeding"
 
 # will be selectable
-subject_list = c("1001", "1002", "1003", "1004", "1005", "1003", "1016")
-groups = list(c("1001", "1002"), c("1003", "1004"), c("1005", "1006"))
+groups = list(c("1001, 1002"), c("1003, 1004"), c("1005, 1006"))
 
 # load data -----------------------------------------------
 #setwd("E:/OneDrive/programming/clams/")
@@ -85,36 +108,27 @@ setwd("~/OneDrive/programming/clams/")
 
 column_specs = read_delim("clams_column_specification.txt", delim = '\t')
 
-# -1 -1  is because temp and light is still present in this iteration
-#parameters = column_specs$name_app[!is.na(column_specs$aggregate)][-1][-1]
-
-parameters = column_specs %>% filter(!is.na(aggregate)) %>% select(name_app) %>% pull
-names(parameters) = column_specs %>% filter(!is.na(aggregate)) %>% select(display_app) %>% pull
-
-parameters = parameters[-1][-1]
+parameters = column_specs %>% filter(parameter == 1) %>% select(name_app) %>% pull
+names(parameters) = column_specs %>% filter(parameter == 1) %>% select(display_app) %>% pull
 
 data = read_delim("2019-10-16_tse.csv", delim = ',',
                   col_types = "cicdiddddiiiiiiiiddc")
 data$temp = NULL
 data$events = NULL
 
-#colpal = c("#F8766D", "#E68613", "#CD9600", "#ABA300", "#7CAE00", "#0CB702", "#00BE67", "#00C19A", "#00BFC4", "#00B8E7", "#00A9FF", "#8494FF", "#C77CFF", "#ED68ED","#FF61CC", "#FF68A1")
+subject_list = unique(data$subject)
 
 # analysis ------------------------------------------------
 time_aggregation_values = intersect(seq(interval, 24*60, by = interval), 
                                     c(divisors(12*60)[-1], 1440))
 time_aggregation_repeats = time_aggregation_values / interval
 
-data_nest = data %>% group_by(subject) %>% nest()
+data_nest = data %>% dplyr::group_by(subject) %>% nest()
 data_nest = data_nest %>% 
   mutate(first_night_interval = map(data, . %>% dplyr::filter(light == 0) %>% top_n(1, -interval) %>% dplyr::select(interval) %>% as.numeric),
-         no_records = map(data, . %>% count() %>% as.numeric),
-         cropped_records = map2_dbl(.x = data, .y = first_night_interval, function(x, y) {(x %>% count() %>% as.numeric) + 1 - y}))
+         no_records = map(data, . %>% dplyr::count() %>% as.numeric),
+         cropped_records = map2_dbl(.x = data, .y = first_night_interval, function(x, y) {(x %>% dplyr::count() %>% as.numeric) + 1 - y}))
 
-
-
-#min records not implemented
-#min_records = min(map2_dbl(data_nest$cropped_records, data_nest$first_night_interval, `-`))
 min_records = min(data_nest$cropped_records)
 
 data_nest = data_nest %>%
@@ -122,14 +136,9 @@ data_nest = data_nest %>%
     x %>% dplyr::filter(interval >= y & interval <= (mm + y))
   }, mm = min_records))
 
-# data_nest = data_nest %>%
-#   mutate(aggdf = map2(no_records, first_night_interval, .f = create_aggregation_vector, time_aggregation_repeats))
-
-# data_nest = data_nest %>%
-#   mutate(aggdf = list(map2_dfc(cropped_records, time_aggregation_repeats, .f = create_aggregation_vector)))
-
 aggdf = map_dfc(time_aggregation_repeats, .f = create_aggregation_vector, data_nest$cropped_records[[1]])
 names(aggdf) = paste0("t",time_aggregation_values)
+
 
 # param_time_grid = expand.grid(param = parameters, time = names(aggdf), stringsAsFactors = F)
 # 

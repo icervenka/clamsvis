@@ -8,44 +8,82 @@ ui <- fluidPage(
       
       uiOutput("file_input"),
       
-      tags$hr(),
+      conditionalPanel(
+        condition = "input.tabs1 != 'Download'",
+        
+        tags$hr(),
+        
+        uiOutput("select_parameter"),
       
-      uiOutput("select_parameter"),
+        uiOutput("select_comparison_parameter"),
       
-      uiOutput("select_comparison_parameter"),
-      
-      uiOutput("select_aggregation"),
-      
-      uiOutput("display_interval"),
-      
-      uiOutput("select_cumulative"),
+        tags$hr(),
+      ),
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Individual'",
+        condition = "input.tabs1 == 'Individual' | 
+                     input.tabs1 == 'Grouped'",
         
-        uiOutput("select_subjects"),
+        uiOutput("select_aggregation"),
+        
+        uiOutput("display_interval"),
         
       ),
       
-      uiOutput("display_points"),
+      conditionalPanel(
+        condition = "input.tabs1 == 'Individual' | 
+                     input.tabs1 == 'Hour'",
+      
+        uiOutput("select_subjects")
+      ),
+      
+      conditionalPanel(
+        condition = "input.tabs1 == 'Individual' | 
+                     input.tabs1 == 'Grouped'",
+        
+        uiOutput("select_cumulative")
+        
+      ),
+      
+      conditionalPanel(
+        condition = "input.tabs1 == 'Individual' | 
+                     input.tabs1 == 'Grouped' | 
+                     input.tabs1 == 'Daily Individual' | 
+                     input.tabs1 == 'Daily Grouped' | 
+                     input.tabs1 == 'Hour'",
+        
+        uiOutput("display_points")
+        
+      ),
+      
+      conditionalPanel(
+        condition = "input.tabs1 == 'Grouped' | 
+                     input.tabs1 == 'Daily Grouped'",
+        
+        uiOutput('select_no_groups'),
+        
+        uiOutput('display_groups'),
+        
+      ),
       
       conditionalPanel(
         condition = "input.tabs1 == 'Grouped'",
         
         uiOutput("display_errorbars"),
         
-        uiOutput('select_no_groups'),
+        uiOutput("display_statistics")
         
-        uiOutput('display_groups'),
-        
-        uiOutput("display_statistics"),
       ),
       
-      tags$hr(),
-      
-      uiOutput("plot_width"),
-      
-      uiOutput("plot_height"),
+      conditionalPanel(
+        condition = "input.tabs1 != 'Download'",
+        
+        tags$hr(),
+        
+        uiOutput("plot_width"),
+        
+        uiOutput("plot_height")
+      ),
       
       width = 2
     ),
@@ -62,14 +100,14 @@ ui <- fluidPage(
         tabPanel("Grouped",
                  uiOutput("group_plot_render")),
       
-        tabPanel("Summary",
-                 source("temp_ui.R", local = TRUE)[1]),
+        tabPanel("Daily Individual",
+                 uiOutput("daily_individual_plot_render")),
     
-        tabPanel("Group Summary",
-                 source("temp_ui.R", local = TRUE)[1]),
+        tabPanel("Daily Grouped",
+                 uiOutput("daily_grouped_plot_render")),
   
         tabPanel("Hour",
-                 source("temp_ui.R", local = TRUE)[1]),
+                 uiOutput("hour_plot_render")),
         
         tabPanel("Circadian",
                  source("temp_ui.R", local = TRUE)[1]),
@@ -87,7 +125,7 @@ ui <- fluidPage(
                  source("temp_ui.R", local = TRUE)[1]),
         
         tabPanel("Download", 
-                 source("temp_ui.R", local = TRUE)[1])
+                 uiOutput("download"))
         
       ),
       width = 10
