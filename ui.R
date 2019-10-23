@@ -85,6 +85,12 @@ ui <- fluidPage(
         uiOutput("plot_height")
       ),
       
+      conditionalPanel(
+        condition = "input.tabs1 == 'Download'",      
+        p("Due to the rather computationally intensive calculations of all possible aggregations and their subsequent export xlsx format,
+         it is currently only possible to select 5 aggregation intervals."),
+        h4("The request take several seconds to process after clicking the download button")
+      ),
       width = 2
     ),
     mainPanel(
@@ -101,7 +107,8 @@ ui <- fluidPage(
                  uiOutput("group_plot_render")),
       
         tabPanel("Daily Individual",
-                 uiOutput("daily_individual_plot_render")),
+                 uiOutput("daily_individual_plot_render"),
+                 uiOutput("daily_individual_plot_render2")),
     
         tabPanel("Daily Grouped",
                  uiOutput("daily_grouped_plot_render")),

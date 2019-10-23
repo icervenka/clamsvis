@@ -1,21 +1,17 @@
 output$group_plot <- renderPlot({
   
-  selected_aggregation = paste0("t", input$select_aggregation)
-  selected_parameter = input$select_parameter
-  selected_cumulative = input$select_cumulative
-  
   group_df = parse_group_inputs(input)
   
   if(dim(group_df)[1] > 0) {
 
-    aggregated_df = map2_dfr(data_nest$cropped, 
-                             data_nest$subject,
+    aggregated_df = map2_dfr(global_vars$data_subject$cropped, 
+                             global_vars$data_subject$subject,
                              .f = aggregate_parameter, 
-                             aggdf, 
-                             selected_parameter, 
-                             selected_aggregation, 
-                             aggregate_by(selected_parameter),
-                             ifelse(selected_cumulative == "2", TRUE, FALSE))
+                             global_vars$aggdf, 
+                             input$select_parameter, 
+                             paste0("t", input$select_aggregation), 
+                             aggregate_by(input$select_parameter),
+                             ifelse(input$select_cumulative == "2", TRUE, FALSE))
     
     group_aggregated_df = merge(aggregated_df, group_df, by = "subject")
     
@@ -25,15 +21,14 @@ output$group_plot <- renderPlot({
     # })
     # pvals = pvals %>% dplyr::mutate(p.adj = p.adjust(p.value, method = "BH"))
     
-    #group_aggregated_df = group_means(aggregated_df, group_list)
+    global_vars$max_display_interval = max(aggregated_df$interval)
     
     p = group_aggregated_df %>%
       group_by(interval, light, group) %>% 
       summarise(mean = mean(parameter), sd = sd(parameter)) %>%
       dplyr::filter(interval >= input$display_interval[1] & interval <= input$display_interval[2]) %>%
       ggplot(aes(x = interval, y = mean)) + 
-      geom_line(aes(colour = group)) +
-      theme_bw()
+      geom_line(aes(colour = group))
     
     if("1" %in% input$display_points) {
       p = p + geom_point(aes(colour = group))

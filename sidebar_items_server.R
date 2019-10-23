@@ -1,24 +1,24 @@
 output$file_input <- renderUI({
-  fileInput("file", "Upload your file")
+  fileInput("file1", "Upload your file")
 })
 
 output$select_parameter <- renderUI({
   # Create the checkboxes and select them all by default
   selectInput("select_parameter", label = "Select parameter", 
-              choices = parameters, 
+              choices = global_vars$parameters, 
               selected = 1)
 })
 
 output$select_comparison_parameter <- renderUI({
   # Create the checkboxes and select them all by default
   selectInput("select_comparison_parameter", label = "Select comparison parameter", 
-              choices = c("None", parameters), 
+              choices = c("None", global_vars$parameters), 
               selected = 1)
 })
 
 output$select_aggregation <- renderUI({
   shinyWidgets::sliderTextInput("select_aggregation", "Select aggregation [min]",
-                                choices = time_aggregation_values %>% as.character, selected = "60")
+                                choices = global_vars$time_aggregation_values %>% as.character, selected = "60")
 })
 
 output$select_cumulative <- renderUI({
@@ -30,13 +30,13 @@ output$select_cumulative <- renderUI({
 output$select_subjects <- renderUI({
   # Create the checkboxes and select them all by default
   checkboxGroupInput("select_subjects", "Select Subjects", 
-                     choices  = subject_list,
-                     selected = subject_list[1:2], inline = TRUE)
+                     choices  = global_vars$subject_list,
+                     selected = global_vars$subject_list[1:2], inline = TRUE)
 })
 
 output$select_no_groups <- renderUI({
   # Create the checkboxes and select them all by default
-  numericInput("select_no_groups", label = "Select number of groups", value = 1, min = 1, max = length(subject_list)/2)
+  numericInput("select_no_groups", label = "Select number of groups", value = 1, min = 1, max = length(global_vars$subject_list)/2)
 })
 
 output$display_groups <- renderUI({
