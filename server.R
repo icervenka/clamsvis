@@ -88,6 +88,29 @@ server <- function(input, output) {
   theme_set(theme_bw(base_size = 18))
   global_vars = reactiveValues()
   
+  counter = reactiveValues(n = 1)
+  
+  observeEvent(input$add_btn, {counter$n <- counter$n + 1})
+  observeEvent(input$rm_btn, {
+    if (counter$n > 1) counter$n <- counter$n - 1
+  })
+  
+  paramter_boxes <- reactive({
+  
+    n <- counter$n
+    
+    if (n > 1) {
+      lapply(seq_len(n-1), function(i) {
+        selectInput(paste0("select_parameter_",i), label = NULL, 
+                    choices = global_vars$parameters, 
+                    selected = input[[paste0("select_parameter_", i)]])
+      })
+    }
+    
+  })
+  
+  output$textbox_ui <- renderUI({ paramter_boxes() })
+  
   source("sidebar_items_server.R", local = TRUE)
   
   source("read_input_server.R", local = TRUE)

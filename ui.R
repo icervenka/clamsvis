@@ -15,8 +15,23 @@ ui <- fluidPage(
         
         uiOutput("select_parameter"),
       
-        uiOutput("select_comparison_parameter"),
+        #uiOutput("select_comparison_parameter"),
       
+        uiOutput("textbox_ui"),
+        
+        fluidRow(
+          column(
+            align = 'right',
+            actionButton("add_btn", "Add"),
+            width = 2
+          ),
+          column(
+            align = 'right',
+            actionButton("rm_btn", "Remove "),
+            width = 2
+          )
+        ),
+        
         tags$hr(),
       ),
       
