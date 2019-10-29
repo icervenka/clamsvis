@@ -2,20 +2,6 @@ output$file_input <- renderUI({
   fileInput("file1", "Upload your file")
 })
 
-output$select_parameter <- renderUI({
-  # Create the checkboxes and select them all by default
-  selectInput("select_parameter", label = "Select parameter", 
-              choices = global_vars$parameters, 
-              selected = 1)
-})
-
-output$select_comparison_parameter <- renderUI({
-  # Create the checkboxes and select them all by default
-  selectInput("select_comparison_parameter", label = "Select comparison parameter", 
-              choices = c("None", global_vars$parameters), 
-              selected = 1)
-})
-
 output$select_aggregation <- renderUI({
   shinyWidgets::sliderTextInput("select_aggregation", "Select aggregation [min]",
                                 choices = global_vars$time_aggregation_values %>% as.character, selected = "60")
@@ -34,6 +20,11 @@ output$select_subjects <- renderUI({
                      selected = global_vars$subject_list[1:2], inline = TRUE)
 })
 
+output$shift_zt <- renderUI({
+  sliderInput("shift_zt", label = "Shift Zeitgeber 0 to:", min = 0, 
+              max = 23, value = 6, step = 1)
+})
+
 output$select_no_groups <- renderUI({
   # Create the checkboxes and select them all by default
   numericInput("select_no_groups", label = "Select number of groups", value = 1, min = 1, max = length(global_vars$subject_list)/2)
@@ -41,10 +32,11 @@ output$select_no_groups <- renderUI({
 
 output$display_groups <- renderUI({
   # Create the checkboxes and select them all by default
-  print
-  map(1:as.integer(input$select_no_groups), function(i) {
-    isolate(textInput(paste0("group_no_", i), label = paste0("Group: ", i), value = input[[paste0("group_no_", as.character(i))]]))
-  })
+  if(is.integer(input$select_no_groups)) {
+    map(1:as.integer(input$select_no_groups), function(i) {
+      isolate(textInput(inputId = paste0("group_no_", i), label = paste0("Group: ", i), value = input[[paste0("group_no_", as.character(i))]]))
+    })
+  }
 })
 
 output$display_points <- renderUI({

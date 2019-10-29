@@ -1,20 +1,21 @@
 readInput = observe({
   
-  file <- input$file1
-  ext <- tools::file_ext(file)[1]
-  
-  # if file is not uploaded provide temp file to show results
-  if(is.null(file)) {
-    file <- read_delim("2019-10-16_tse.csv", delim = ',',col_types = "cicdiddddiiiiiiiiddc")
-  } else if(toupper(ext) == "CSV" | toupper(ext) == "TXT") {
-    file.rename(file$datapath,
-                paste(file$datapath, ext, sep="."))
-    file <- read_delim(paste(file$datapath, ext, sep="."), delim = ',',col_types = "cicdiddddiiiiiiiiddc")
-  }
-  
+  interval = 2
+  # 
+  # file <- input$file1
+  # ext <- tools::file_ext(file)[1]
+  # 
+  # # if file is not uploaded provide temp file to show results
+  # if(is.null(file)) {
+     file <- read_delim("2019-10-29_tse.csv", delim = ',',col_types = "ciciddddiiiiiiiidd")
+  # } else if(toupper(ext) == "CSV" | toupper(ext) == "TXT") {
+  #   file.rename(file$datapath,
+  #               paste(file$datapath, ext, sep="."))
+  #   file <- read_delim(paste(file$datapath, ext, sep="."), delim = ',',col_types = "cicdiddddiiiiiiiiddc")
+  # }
+  # 
   data = file
-  data$temp = NULL
-  data$events = NULL
+  
   subject_list = unique(data$subject)
   
   parameters = column_specs %>% dplyr::filter(parameter == 1) %>% select(name_app) %>% pull
@@ -40,12 +41,13 @@ readInput = observe({
   aggdf = map_dfc(time_aggregation_repeats, .f = create_aggregation_vector, data_subject$cropped_records[[1]])
   names(aggdf) = paste0("t",time_aggregation_values)
   
-  global_vars$data_subject = data_subject
-  global_vars$aggdf = aggdf
+  data_long = data_subject %>% select(subject, cropped) %>% unnest(cropped)
+  data_agg = cbind.data.frame(data_long, aggdf)
+
+  global_vars$data_agg = data_agg
   global_vars$column_specs = column_specs
   global_vars$parameters = parameters
   global_vars$subject_list = subject_list
   global_vars$time_aggregation_values = time_aggregation_values
   global_vars$time_aggregation_repeats = time_aggregation_repeats
-  
 })

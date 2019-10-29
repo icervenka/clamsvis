@@ -1,33 +1,30 @@
 output$daily_grouped_plot <- renderPlot({
   
   # TODO works, but there is some json error Input to asJSON(keep_vec_names=TRUE) is a named vector.
+  # TODO remove fasting-refeeding
+  # select checkboxes for days and nights for aggregation
   group_df = parse_group_inputs(input)
+  
+  num_parameters = counter$n
+  
+  selected_parameters = lapply(1:num_parameters, function(x) {input[[paste0("select_parameter_", x)]]}) %>% unlist(recursive = TRUE)
   
   if(dim(group_df)[1] > 0) {
     
-    aggregated_df = map2_dfr(global_vars$data_subject$cropped, 
-                             global_vars$data_subject$subject,
-                             .f = aggregate_parameter, 
-                             global_vars$aggdf, 
-                             input$select_parameter, 
-                             "t720", 
-                             aggregate_by(input$select_parameter),
-                             ifelse(input$select_cumulative == "2", TRUE, FALSE))
+    aggregated_df = map_dfr(selected_parameters, 
+                            ~ aggregate_parameter(global_vars$data_agg, 
+                                                  "t720", 
+                                                  .x))
+    
+    aggregated_df$param = factor(aggregated_df$param, levels = unique(aggregated_df$param))
     
     group_aggregated_df = merge(aggregated_df, group_df, by = "subject")
     
-    p = group_aggregated_df %>%
-      ggplot(aes(x = group, y = parameter, fill = group)) +
+    group_aggregated_df %>%
+      ggplot(aes(x = group, y = value, fill = group)) +
       stat_summary(fun.data = min.mean.sd.max,  geom = "boxplot") + 
-      facet_wrap(~light, scales = "fixed", labeller = label_both)
-    
-    if("1" %in% input$display_points) {
-      p = p + geom_jitter(shape = 21, colour = "black", fill = "white", size = 3)
-    }
-    p
-    
-  } else {
-    ggplot() + theme_void()
+      plot_jitter(input$display_points) + 
+      plot_facets(length(selected_parameters) + 2, "param ~ light")
   }
 })
 

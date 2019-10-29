@@ -1,6 +1,7 @@
 # imports ------------------------------------------------
 library(shiny)
 library(shinyWidgets)
+library(data.table)
 library(xlsx)
 library(rJava)
 library(stringr)
@@ -25,15 +26,13 @@ create_aggregation_vector = function(each, length) {
   return(vec)
 }
 
-aggregate_parameter = function(data, subject, aggregation, parameter = "vo2", time = "t360", by = "mean", cumulative = FALSE) {
-  param = parameter
-  tt = aggregate(data %>% dplyr::select(date_time, light), aggregation %>% dplyr::select(time), first)
-  dt = aggregate(data %>% dplyr::select(parameter), aggregation %>% dplyr::select(time), by)
-  names(dt) = c("interval", "parameter")
-  if(cumulative == TRUE) {
-    dt = cbind.data.frame(dt %>% dplyr::select(-parameter), dt %>% dplyr::select(parameter) %>% cumsum)
-  }
-  return(cbind.data.frame(tt, dt, subject, param, stringsAsFactors = F))
+aggregate_parameter = function(data, time, param) {
+  func = aggregate_by(param)
+  setDT(data)[,.(light = first(light),
+                 date_time = first(date_time),
+                 value = func(get(param)),
+                 param = param),
+              by = .(subject, interval = get(time))]
 }
 
 parse_group_inputs = function(inp) {
@@ -59,11 +58,6 @@ parse_group_inputs = function(inp) {
   return(group_df)
 }
 
-aggregate_by = function(select_param) {
-  by = column_specs %>% dplyr::filter(name_app == select_param) %>% dplyr::select(aggregate) %>% as.character
-  return(by)
-}
-
 min.mean.sd.max <- function(x) {
   r <- c(min(x), mean(x) - sd(x), mean(x), mean(x) + sd(x), max(x))
   names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
@@ -73,58 +67,91 @@ min.mean.sd.max <- function(x) {
 aggregate_with_specs = function(specs) {
   function(select_param) {
     by = specs %>% dplyr::filter(name_app == select_param) %>% dplyr::select(aggregate) %>% as.character
-    return(by)
+    return(get(by))
+  }
+}
+
+plot_points = function(condition_field, aes_colour = subject) {
+  if("1" %in% condition_field) {
+    geom_point(aes(colour = {{ aes_colour }} ))
+  } else {
+    geom_blank()
+  }
+}
+
+plot_errorbars = function(condition_field, aes_fill = group) {
+  if(condition_field == "2") {
+    geom_ribbon(aes(ymin=mean-sd, ymax=mean+sd, fill = {{ aes_fill }}), alpha = 0.08)
+  } else {
+    geom_blank()
+  }
+}
+
+plot_facets = function(n, formula = "param ~ ." ) {
+  if(n > 1) {
+    facet_grid(as.formula(formula) ,scales = "free_y", labeller = label_both)
+  } else {
+    geom_blank()
+  }
+}
+
+plot_jitter = function(condition_field) {
+  if("1" %in% condition_field) {
+    geom_jitter(shape = 21, colour = "black", fill = "white", size = 3, width = 0.25)
+  } else {
+    geom_blank()
   }
 }
 
 # constants ------------------------------------------------
-column_specs = read_delim("clams_column_specification.txt", delim = '\t')
+column_specs = suppressMessages(read_delim("clams_column_specification.txt", delim = '\t'))
 aggregate_by = aggregate_with_specs(column_specs)
-interval = 2
 
 # server ------------------------------------------------
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   theme_set(theme_bw(base_size = 18))
   global_vars = reactiveValues()
-  
   counter = reactiveValues(n = 1)
-  
-  observeEvent(input$add_btn, {counter$n <- counter$n + 1})
-  observeEvent(input$rm_btn, {
-    if (counter$n > 1) counter$n <- counter$n - 1
-  })
-  
-  paramter_boxes <- reactive({
-  
-    n <- counter$n
-    
-    if (n > 1) {
-      lapply(seq_len(n-1), function(i) {
-        selectInput(paste0("select_parameter_",i), label = NULL, 
-                    choices = global_vars$parameters, 
-                    selected = input[[paste0("select_parameter_", i)]])
-      })
-    }
-    
-  })
-  
-  output$textbox_ui <- renderUI({ paramter_boxes() })
-  
-  source("sidebar_items_server.R", local = TRUE)
-  
+
   source("read_input_server.R", local = TRUE)
   
+  observeEvent(input$add_btn, {
+    if(counter$n < 6) counter$n <- counter$n + 1
+  })
+
+  observeEvent(input$rm_btn, {
+    if(counter$n > 1) counter$n <- counter$n - 1
+  })
+  
+  parameter_boxes = reactive({
+    n <- counter$n
+    print("running")
+    if (n >= 1) {
+      lapply(seq_len(n), function(i) {
+        selectInput(paste0("select_parameter_",i), label = NULL,
+                    choices = global_vars$parameters,
+                    selected =  input[[paste0("select_parameter_", i)]])
+      })
+    }
+  })
+
+  output$textbox_ui <- renderUI({ parameter_boxes() })
+  
+  
+  
+  source("sidebar_items_server.R", local = TRUE)
+
   source("individual_plot_server.R", local = TRUE)
   
   source("grouped_plot_server.R", local = TRUE)
-  
+
   source("daily_individual_plot_server.R", local = TRUE)
-  
+
   source("daily_grouped_plot_server.R", local = TRUE)
-  
+
   source("hour_plot_server.R", local = TRUE)
-  
+
   source("download_server.R", local = TRUE)
   
 }

@@ -2,6 +2,23 @@ ui <- fluidPage(
   includeCSS("style.css"),
   titlePanel("CLAMS-VIS"),
   
+  tags$head(
+    tags$style(
+      HTML(
+        ".checkbox-inline { 
+                    margin-left: 0px;
+                    margin-right: 10px;
+          }
+         .checkbox-inline+.checkbox-inline {
+                    margin-left: 0px;
+                    margin-right: 10px;
+          }
+        "
+      )
+    ) 
+  ),
+  
+  
   sidebarLayout(
     sidebarPanel(
       "",
@@ -12,10 +29,6 @@ ui <- fluidPage(
         condition = "input.tabs1 != 'Download'",
         
         tags$hr(),
-        
-        uiOutput("select_parameter"),
-      
-        #uiOutput("select_comparison_parameter"),
       
         uiOutput("textbox_ui"),
         
@@ -53,6 +66,12 @@ ui <- fluidPage(
       ),
       
       conditionalPanel(
+        condition = "input.tabs1 == 'Hour'",
+        
+        uiOutput("shift_zt")
+      ),
+      
+      conditionalPanel(
         condition = "input.tabs1 == 'Individual' | 
                      input.tabs1 == 'Grouped'",
         
@@ -82,7 +101,8 @@ ui <- fluidPage(
       ),
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Grouped'",
+        condition = "input.tabs1 == 'Grouped' | 
+                     input.tabs1 == 'Hour'",
         
         uiOutput("display_errorbars"),
         
@@ -116,36 +136,35 @@ ui <- fluidPage(
         type = "pills",
         
         tabPanel("Individual",
-                uiOutput("individual_plot_render")),
+                 uiOutput("individual_plot_render")),
         
         tabPanel("Grouped",
                  uiOutput("group_plot_render")),
-      
+
         tabPanel("Daily Individual",
-                 uiOutput("daily_individual_plot_render"),
-                 uiOutput("daily_individual_plot_render2")),
-    
+                 uiOutput("daily_individual_plot_render")),
+
         tabPanel("Daily Grouped",
                  uiOutput("daily_grouped_plot_render")),
   
         tabPanel("Hour",
                  uiOutput("hour_plot_render")),
         
-        tabPanel("Circadian",
-                 source("temp_ui.R", local = TRUE)[1]),
-        
-        tabPanel("Sleep",
-                 source("temp_ui.R", local = TRUE)[1]),
-        
-        tabPanel("Movement",
-                 source("temp_ui.R", local = TRUE)[1]),
-        
-        tabPanel("Food",
-                 source("temp_ui.R", local = TRUE)[1]),
-        
-        tabPanel("Drink",
-                 source("temp_ui.R", local = TRUE)[1]),
-        
+        # tabPanel("Circadian",
+        #          source("temp_ui.R", local = TRUE)[1]),
+        # 
+        # tabPanel("Sleep",
+        #          source("temp_ui.R", local = TRUE)[1]),
+        # 
+        # tabPanel("Movement",
+        #          source("temp_ui.R", local = TRUE)[1]),
+        # 
+        # tabPanel("Food",
+        #          source("temp_ui.R", local = TRUE)[1]),
+        # 
+        # tabPanel("Drink",
+        #          source("temp_ui.R", local = TRUE)[1]),
+        # 
         tabPanel("Download", 
                  uiOutput("download"))
         
