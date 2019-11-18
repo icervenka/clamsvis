@@ -17,12 +17,19 @@ output$individual_plot <- renderPlot({
   
   global_vars$max_display_interval = max(aggregated_df$interval)
   
-  aggregated_df %>%
+  aa = aggregated_df %>%
     dplyr::filter(subject %in% input$select_subjects) %>%
-    dplyr::filter(interval >= input$display_interval[1] & interval <= input$display_interval[2]) %>%
+    dplyr::mutate(first_subject = case_when(subject == input$select_subjects[1] ~ 1, 
+                                            subject != input$select_subjects[1] ~ 0)) %>%
+    dplyr::filter(interval >= input$display_interval[1] & interval <= input$display_interval[2])
+  
+  aa %>%
     ggplot(aes(x = interval, y = value, color = subject)) + 
-    geom_tile(data = . %>% filter(subject == input$select_subjects[1]) %>% filter(light != 1),
-              aes(x = (!light)*interval, y = 0 , width = 1, height = Inf),
+    # geom_tile(data = . %>% filter(subject == input$select_subjects[1]) %>% filter(light != 1),
+    #           aes(x = (!light)*interval, y = 0 , width = 1, height = Inf),
+    #           fill = "grey50", alpha = 0.2, inherit.aes = F) +
+    geom_tile(data = NULL,
+              aes(x = interval, y = 0 , width = 1, height = Inf*(!light)*first_subject),
               fill = "grey50", alpha = 0.2, inherit.aes = F) +
     geom_line() + 
     plot_points(input$display_points) +
@@ -30,5 +37,17 @@ output$individual_plot <- renderPlot({
 })
 
 output$individual_plot_render <- renderUI({
-  plotOutput("individual_plot", height = input$plot_height, width = input$plot_width)
+  if(is.null(input$plot_height)) {
+    input_height = 500
+  } else {
+    input_height = input$plot_height
+  }
+  
+  if(is.null(input$plot_width)) {
+    input_width = 750
+  } else {
+    input_width = input$plot_width
+  }
+  
+  plotOutput("individual_plot", height = input_height, width = input_width)
 })

@@ -7,6 +7,11 @@ output$select_aggregation <- renderUI({
                                 choices = global_vars$time_aggregation_values %>% as.character, selected = "60")
 })
 
+output$display_interval <- renderUI({
+  sliderInput("display_interval", label = "Display intervals", min = 1, 
+              max = global_vars$max_display_interval, value = c(0, global_vars$max_display_interval), step = 1)
+})
+
 output$select_cumulative <- renderUI({
   radioButtons("select_cumulative", label = "Plot",
                choices = list("Interval data" = 1, "Cumulative data" = 2), 
@@ -15,9 +20,18 @@ output$select_cumulative <- renderUI({
 
 output$select_subjects <- renderUI({
   # Create the checkboxes and select them all by default
-  checkboxGroupInput("select_subjects", "Select Subjects", 
-                     choices  = global_vars$subject_list,
-                     selected = global_vars$subject_list[1:2], inline = TRUE)
+  pickerInput(
+    inputId = "select_subjects", 
+    label = "Select subjects", 
+    choices = global_vars$subject_list, 
+    selected = global_vars$subject_list[1:2],
+    options = list(
+      `actions-box` = TRUE, 
+      size = 15,
+      `selected-text-format` = "count > 4"
+    ), 
+    multiple = TRUE
+  )
 })
 
 output$shift_zt <- renderUI({
@@ -34,7 +48,20 @@ output$display_groups <- renderUI({
   # Create the checkboxes and select them all by default
   if(is.integer(input$select_no_groups)) {
     map(1:as.integer(input$select_no_groups), function(i) {
-      isolate(textInput(inputId = paste0("group_no_", i), label = paste0("Group: ", i), value = input[[paste0("group_no_", as.character(i))]]))
+      isolate(
+        pickerInput(
+          inputId = paste0("group_no_", i), 
+          label = paste0("Group: ", i), 
+          choices = global_vars$subject_list, 
+          selected = input[[paste0("group_no_", as.character(i))]],
+          options = list(
+            `actions-box` = TRUE, 
+            size = 15,
+            `selected-text-format` = "count > 4"
+          ), 
+          multiple = TRUE
+        )
+      )
     })
   }
 })
@@ -58,9 +85,59 @@ output$display_statistics <- renderUI({
                selected = 1)
 })
 
-output$display_interval <- renderUI({
-  sliderInput("display_interval", label = "Display intervals", min = 1, 
-              max = global_vars$max_display_interval, value = c(0, global_vars$max_display_interval), step = 1)
+output$select_dark <- renderUI({
+  pickerInput(
+    inputId = "select_dark", 
+    label = "Include dark intervals", 
+    choices = global_vars$dark_intervals,
+    selected = global_vars$dark_intervals, 
+    options = list(
+      `actions-box` = TRUE, 
+      size = 15,
+      `selected-text-format` = "count > 15"
+    ), 
+    multiple = TRUE
+  )
+})
+
+output$select_light <- renderUI({
+  pickerInput(
+    inputId = "select_light", 
+    label = "Include light intervals", 
+    choices = global_vars$light_intervals, 
+    selected = global_vars$light_intervals, 
+    options = list(
+      `actions-box` = TRUE, 
+      size = 15,
+      `selected-text-format` = "count > 15"
+    ), 
+    multiple = TRUE
+  )
+})
+
+output$download_view <- renderUI({
+  downloadButton("download_current_view", label = "Download this view as csv", icon = icon("download"))
+})
+
+output$download_current_view <- downloadHandler(
+  filename = "daily_view.csv",
+  content = function(file) {
+    data = global_vars$output_df
+    write.csv(data, file)
+  }
+)
+
+output$bout_mincount <- renderUI({
+  numericInput("bout_mincount", label = "Bout minimum count", value = 5)
+})
+
+output$bout_aggregation <- renderUI({
+  shinyWidgets::sliderTextInput("bout_aggregation", "Select min bout length [min]",
+                                choices = global_vars$time_aggregation_values %>% as.character, selected = "60")
+})
+
+output$bout_update <- renderUI({
+  actionButton("bout_update", "Update bout parameters")
 })
 
 output$plot_width <- renderUI({

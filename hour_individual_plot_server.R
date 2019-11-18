@@ -1,4 +1,4 @@
-output$hour_plot <- renderPlot({
+output$hour_individual_plot <- renderPlot({
   
   num_parameters = counter$n
   selected_parameters = lapply(1:num_parameters, function(x) {input[[paste0("select_parameter_", x)]]}) %>% unlist(recursive = TRUE)
@@ -13,22 +13,23 @@ output$hour_plot <- renderPlot({
   
   aggregated_df$param = factor(aggregated_df$param, levels = unique(aggregated_df$param))
   
-  aggregated_df %>%
+  p = aggregated_df %>%
     dplyr::filter(subject %in% input$select_subjects) %>%
     group_by(hour, subject, param) %>%
-    summarise(mean = mean(value), sd = sd(value), light = first(light))  %>%
+    summarise(mean = mean(value), sd = sd(value), light = dplyr::first(light))  %>%
     ggplot(aes(x = hour, y = mean)) +
     geom_tile(data = . %>% filter(subject == input$select_subjects[1] & light != 1),
               aes(x = (!light)*hour, y = 0 , width = 1, height = Inf),
               fill = "grey50", alpha = 0.2, inherit.aes = F) +
     geom_line(aes(color = subject)) +
     plot_points(input$display_points) +
-    plot_errorbars(input$display_errorbars, subject) + 
+    plot_errorbars(input$display_errorbars, subject) +
     plot_facets(length(selected_parameters))
     
+  p
 })
 
 
-output$hour_plot_render <- renderUI({
-  plotOutput("hour_plot", height = input$plot_height, width = input$plot_width)
+output$hour_individual_plot_render <- renderUI({
+  plotOutput("hour_individual_plot", height = input$plot_height, width = input$plot_width)
 })

@@ -1,25 +1,31 @@
 readInput = observe({
-  
-  interval = 2
-  # 
-  # file <- input$file1
-  # ext <- tools::file_ext(file)[1]
-  # 
-  # # if file is not uploaded provide temp file to show results
-  # if(is.null(file)) {
-     file <- read_delim("2019-10-29_tse.csv", delim = ',',col_types = "ciciddddiiiiiiiidd")
-  # } else if(toupper(ext) == "CSV" | toupper(ext) == "TXT") {
-  #   file.rename(file$datapath,
-  #               paste(file$datapath, ext, sep="."))
-  #   file <- read_delim(paste(file$datapath, ext, sep="."), delim = ',',col_types = "cicdiddddiiiiiiiiddc")
-  # }
-  # 
+
+  file <- input$file1
+  ext <- tools::file_ext(file)[1]
+
+  # if file is not uploaded provide temp file to show results
+  if(is.null(file)) {
+  file <- read_delim("2019-10-29_tse.csv", delim = ',',col_types = "ciciddddiiiiiiiidd")
+  } else if(toupper(ext) == "CSV" | toupper(ext) == "TXT") {
+    file.rename(file$datapath,
+                paste(file$datapath, ext, sep="."))
+    file <- read_delim(paste(file$datapath, ext, sep="."), delim = ',',col_types = "cicdiddddiiiiiiiiddc")
+  }
+
   data = file
-  
   subject_list = unique(data$subject)
   
   parameters = column_specs %>% dplyr::filter(parameter == 1) %>% select(name_app) %>% pull
   names(parameters) = column_specs %>% filter(parameter == 1) %>% select(display_app) %>% pull
+  
+  #interval = find_interval(data, subject, date_time, interval)
+  interval = 2
+  if(length(interval) != 1) {
+    stop("One of subject time series is not regular. Please update your data and try again")
+  } else {
+    interval = as.numeric(interval)
+  }
+  global_vars$interval = interval
   
   time_aggregation_values = intersect(seq(interval, 24*60, by = interval), 
                                       c(divisors(12*60)[-1], 1440))
@@ -43,7 +49,7 @@ readInput = observe({
   
   data_long = data_subject %>% select(subject, cropped) %>% unnest(cropped)
   data_agg = cbind.data.frame(data_long, aggdf)
-
+  
   global_vars$data_agg = data_agg
   global_vars$column_specs = column_specs
   global_vars$parameters = parameters

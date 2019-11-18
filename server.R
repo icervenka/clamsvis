@@ -21,6 +21,16 @@ options(shiny.maxRequestSize = 20*1024^2)
 options(java.parameters = "-Xmx2048m")
 
 # functions -----------------------------------------------
+find_interval = function(df, group_col, date_time_col, id_col) {
+  date_time_df = df %>% pivot_wider(names_from = {{group_col}}, values_from = {{date_time_col}}, id_cols = {{id_col}})
+  interval = map_dfr(date_time_df[-1], function(x) {diff(x)}) %>% 
+    pivot_longer(everything(), names_to = "subject", values_to = "interval") %>%
+    dplyr::select(interval) %>% 
+    unique %>%
+    pull
+  return(interval)
+}
+
 create_aggregation_vector = function(each, length) {
   vec = c(rep(1:length, each = each, length.out = length))
   return(vec)
@@ -28,8 +38,8 @@ create_aggregation_vector = function(each, length) {
 
 aggregate_parameter = function(data, time, param) {
   func = aggregate_by(param)
-  setDT(data)[,.(light = first(light),
-                 date_time = first(date_time),
+  setDT(data)[,.(light = data.table::first(light),
+                 date_time = data.table::first(date_time),
                  value = func(get(param)),
                  param = param),
               by = .(subject, interval = get(time))]
@@ -64,12 +74,23 @@ min.mean.sd.max <- function(x) {
   r
 }
 
+mean.sd <- function(x) {
+  r <- c(mean(x) - sd(x), mean(x), mean(x) + sd(x))
+  names(r) <- c("ymin", "y", "ymax")
+  r
+}
+
+
 aggregate_with_specs = function(specs) {
   function(select_param) {
     by = specs %>% dplyr::filter(name_app == select_param) %>% dplyr::select(aggregate) %>% as.character
     return(get(by))
   }
 }
+
+
+# additional ploting options ---------------------------------
+# TODO add geom_tile
 
 plot_points = function(condition_field, aes_colour = subject) {
   if("1" %in% condition_field) {
@@ -107,7 +128,7 @@ plot_jitter = function(condition_field) {
 column_specs = suppressMessages(read_delim("clams_column_specification.txt", delim = '\t'))
 aggregate_by = aggregate_with_specs(column_specs)
 
-# server ------------------------------------------------
+# server ---------------------------------------------------
 server <- function(input, output, session) {
   
   theme_set(theme_bw(base_size = 18))
@@ -115,43 +136,27 @@ server <- function(input, output, session) {
   counter = reactiveValues(n = 1)
 
   source("read_input_server.R", local = TRUE)
-  
-  observeEvent(input$add_btn, {
-    if(counter$n < 6) counter$n <- counter$n + 1
-  })
 
-  observeEvent(input$rm_btn, {
-    if(counter$n > 1) counter$n <- counter$n - 1
-  })
-  
-  parameter_boxes = reactive({
-    n <- counter$n
-    print("running")
-    if (n >= 1) {
-      lapply(seq_len(n), function(i) {
-        selectInput(paste0("select_parameter_",i), label = NULL,
-                    choices = global_vars$parameters,
-                    selected =  input[[paste0("select_parameter_", i)]])
-      })
-    }
-  })
-
-  output$textbox_ui <- renderUI({ parameter_boxes() })
-  
-  
+  source("select_boxes_server.R", local = TRUE)
   
   source("sidebar_items_server.R", local = TRUE)
 
   source("individual_plot_server.R", local = TRUE)
   
-  source("grouped_plot_server.R", local = TRUE)
-
   source("daily_individual_plot_server.R", local = TRUE)
-
+  
+  source("bout_individual_plot_server.R", local = TRUE)
+  
+  source("hour_individual_plot_server.R", local = TRUE)
+  
+  source("grouped_plot_server.R", local = TRUE)
+  
   source("daily_grouped_plot_server.R", local = TRUE)
-
-  source("hour_plot_server.R", local = TRUE)
-
+  
+  source("bout_grouped_plot_server.R", local = TRUE)
+  
+  source("hour_grouped_plot_server.R", local = TRUE)
+  
   source("download_server.R", local = TRUE)
   
 }

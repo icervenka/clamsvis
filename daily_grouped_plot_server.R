@@ -20,7 +20,16 @@ output$daily_grouped_plot <- renderPlot({
     
     group_aggregated_df = merge(aggregated_df, group_df, by = "subject")
     
-    group_aggregated_df %>%
+    global_vars$dark_intervals = group_aggregated_df %>% ungroup %>% filter(light == 0) %>% select(interval) %>% unique %>% pull
+    global_vars$light_intervals = group_aggregated_df %>% ungroup %>% filter(light == 1) %>% select(interval) %>% unique %>% pull
+    
+    output_df = group_aggregated_df %>%
+      dplyr::filter(interval %in% input$select_dark | interval %in% input$select_light) %>%
+      group_by(light, group)
+    
+    global_vars$output_df = output_df
+    
+    output_df %>%
       ggplot(aes(x = group, y = value, fill = group)) +
       stat_summary(fun.data = min.mean.sd.max,  geom = "boxplot") + 
       plot_jitter(input$display_points) + 
