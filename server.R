@@ -205,33 +205,31 @@ server <- function(input, output, session) {
 
     global_options$height_multiplier = length(global_vars$selected_parameters)
   })
-
   
-  
-  source("read_input_server.R", local = TRUE)
+  source("read_input.R", local = TRUE)
 
-  source("reactive_exprs_server.R", local = TRUE)
+  source("reactive_exprs.R", local = TRUE)
   
   #source("select_boxes_server.R", local = TRUE)
   
-  source("sidebar_items_server.R", local = TRUE)
+  source("sidebar_items.R", local = TRUE)
 
-  source("individual_plot_server.R", local = TRUE)
+  source("individual_series_plot.R", local = TRUE)
   
-  source("daily_individual_plot_server.R", local = TRUE)
+  source("individual_summary_plot.R", local = TRUE)
   
-  source("bout_individual_plot_server.R", local = TRUE)
+  source("individual_bout_plot.R", local = TRUE)
   
-  source("hour_individual_plot_server.R", local = TRUE)
+  source("individual_hour_plot.R", local = TRUE)
   
-  source("grouped_plot_server.R", local = TRUE)
+  source("grouped_series_plot.R", local = TRUE)
   
-  source("daily_grouped_plot_server.R", local = TRUE)
+  source("grouped_summary_plot.R", local = TRUE)
   
-  source("bout_grouped_plot_server.R", local = TRUE)
+  source("grouped_bout_plot.R", local = TRUE)
   
-  source("hour_grouped_plot_server.R", local = TRUE)
+  source("grouped_hour_plot.R", local = TRUE)
   
-  source("download_server.R", local = TRUE)
+  source("download.R", local = TRUE)
   
 }

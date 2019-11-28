@@ -98,7 +98,6 @@ output$daily_individual_plot <- renderPlotly({
   
 })
 
-
 output$daily_individual_plot_render <- renderUI({
   plotlyOutput("daily_individual_plot",
              height = global_options$plot_height * global_options$height_multiplier, 
