@@ -10,6 +10,8 @@ library(tidyverse)
 library(purrr)
 library(broom)
 library(ggplot2)
+library(plotly)
+library(highcharter)
 library(numbers)
 library(reshape2)
 library(matrixStats)
@@ -23,11 +25,11 @@ options(java.parameters = "-Xmx2048m")
 # functions -----------------------------------------------
 find_interval = function(df, group_col, date_time_col, id_col) {
   date_time_df = df %>% pivot_wider(names_from = {{group_col}}, values_from = {{date_time_col}}, id_cols = {{id_col}})
-  interval = map_dfr(date_time_df[-1], function(x) {diff(x)}) %>% 
-    pivot_longer(everything(), names_to = "subject", values_to = "interval") %>%
-    dplyr::select(interval) %>% 
-    unique %>%
-    pull
+  interval = map_dfr(date_time_df[-1], function(x) {diff(x %>% as_datetime) %>% as.integer}) %>%
+  pivot_longer(everything(), names_to = "subject", values_to = "interval") %>%
+  dplyr::select(interval) %>%
+  unique %>%
+  pull
   return(interval)
 }
 
@@ -38,16 +40,23 @@ create_aggregation_vector = function(each, length) {
 
 aggregate_parameter = function(data, time, param) {
   func = aggregate_by(param)
-  setDT(data)[,.(light = data.table::first(light),
+  data = setDT(data)[,.(light = data.table::first(light),
                  date_time = data.table::first(date_time),
-                 value = func(get(param)),
+                 mean = func(get(param)),
                  param = param),
               by = .(subject, interval = get(time))]
+  data[,period := cumsum(c(1,diff(light)!=0)), by = subject]
+  return(data)
 }
 
+
 parse_group_inputs = function(inp) {
+  no_groups = 1
+  if(!is.null(inp$select_no_groups)) {
+    no_groups = inp$select_no_groups
+  }
   
-  group_list = lapply(1:as.integer(inp$select_no_groups), function(x) {
+  group_list = lapply(1:as.integer(no_groups), function(x) {
     inp[[paste0("group_no_", x)]]
   })
   
@@ -94,7 +103,7 @@ aggregate_with_specs = function(specs) {
 
 plot_points = function(condition_field, aes_colour = subject) {
   if("1" %in% condition_field) {
-    geom_point(aes(colour = {{ aes_colour }} ))
+    geom_point(aes(colour = {{ aes_colour }} ), size = 0.75)
   } else {
     geom_blank()
   }
@@ -118,7 +127,7 @@ plot_facets = function(n, formula = "param ~ ." ) {
 
 plot_jitter = function(condition_field) {
   if("1" %in% condition_field) {
-    geom_jitter(shape = 21, colour = "black", fill = "white", size = 3, width = 0.25)
+    geom_jitter(shape = 21, colour = "grey50", fill = "white", size = 1, stroke = 0.25, width = 0.25)
   } else {
     geom_blank()
   }
@@ -131,13 +140,79 @@ aggregate_by = aggregate_with_specs(column_specs)
 # server ---------------------------------------------------
 server <- function(input, output, session) {
   
-  theme_set(theme_bw(base_size = 18))
+  theme_set(theme_minimal(base_size = 12))
+  
+  rv_data = reactiveValues(
+    data_agg = data.frame(),
+    column_specs = data.frame(),
+    parameters = NULL,
+    subject_list = NULL,
+    time_aggregation_values = NULL,
+    time_aggregation_repeats = NULL,
+    dark_intervals = NULL,
+    light_intervals = NULL
+  )
+  
+  rv_options = reactiveValues(
+    plot_width = 1500,
+    plot_height = 500,
+    height_multiplier = 1
+  )
+  
+  rv_filters = reactiveValues(
+    aggregation = 60,
+    counter = 1,
+    parameters = TRUE,
+    subjects = TRUE,
+    intervals = TRUE,
+    max_interval = 0,
+    groups = TRUE
+  )
+  
   global_vars = reactiveValues()
+  global_options = reactiveValues(
+    plot_width = 1500,
+    plot_height = 500,
+    height_multiplier = 1
+  )
+  
   counter = reactiveValues(n = 1)
+  
+  observe({
+    # print("000")
+    # if(is.null(input$plot_height)) {
+    #   global_options$input_height = 500
+    # } else {
+    #   global_options$input_height = input$plot_height
+    # }
+    # print("aaa")
+    # if(is.null(input$plot_width)) {
+    #   global_options$input_width = 750
+    # } else {
+    #   global_options$input_width = input$plot_width
+    # }
+    # print("bbb")
+    # if(is.null(global_options$height_multiplier)) {
+    #   global_options$height_multiplier = 1
+    # } else {
+    #   global_options$height_multiplier = length(global_vars$selected_parameters)
+    # }
+    # print("ccc")
 
+    global_options$plot_width = input$plot_width
+
+    global_options$plot_height = input$plot_height
+
+    global_options$height_multiplier = length(global_vars$selected_parameters)
+  })
+
+  
+  
   source("read_input_server.R", local = TRUE)
 
-  source("select_boxes_server.R", local = TRUE)
+  source("reactive_exprs_server.R", local = TRUE)
+  
+  #source("select_boxes_server.R", local = TRUE)
   
   source("sidebar_items_server.R", local = TRUE)
 

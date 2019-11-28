@@ -35,23 +35,25 @@ ui <- fluidPage(
       ),
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Series Individual' |             
-                     input.tabs1 == 'Hour Individual'",
+        condition = "input.tabs1 == 'Individual - Series' |             
+                     input.tabs1 == 'Individual - Hour'",
         
         uiOutput("select_subjects")
       ),
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Series Individual' | 
-                     input.tabs1 == 'Series Grouped'",
+        condition = "input.tabs1 == 'Individual - Series' | 
+                     input.tabs1 == 'Grouped - Series' | 
+                     input.tabs1 == 'Individual - Summary' | 
+                     input.tabs1 == 'Grouped - Summary'",
         
         uiOutput("select_aggregation")
         
       ),
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Series Individual' | 
-                     input.tabs1 == 'Series Grouped'",
+        condition = "input.tabs1 == 'Individual - Series' | 
+                     input.tabs1 == 'Grouped - Series'",
         
         uiOutput("display_interval")
         
@@ -59,8 +61,8 @@ ui <- fluidPage(
       
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Bout Individual' |
-                     input.tabs1 == 'Bout Grouped'",
+        condition = "input.tabs1 == 'Individual - Bout' |
+                     input.tabs1 == 'Grouped - Bout'",
         
         uiOutput("bout_aggregation"),
         
@@ -72,8 +74,9 @@ ui <- fluidPage(
       ),
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Daily Individual' | 
-                     input.tabs1 == 'Daily Grouped'",
+        condition = "input.tabs1 == 'Individual - Summary' | 
+                     input.tabs1 == 'Grouped - Summary' | 
+                     input.tabs1 == 'Individual - Hour'",
         
         uiOutput("select_dark"),
         
@@ -82,39 +85,17 @@ ui <- fluidPage(
       ),
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Hour Individual' |
-                     input.tabs1 == 'Hour Grouped'",
+        condition = "input.tabs1 == 'Individual - Hour' |
+                     input.tabs1 == 'Grouped - Hour'",
         
         uiOutput("shift_zt")
       ),
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Series Individual' | 
-                     input.tabs1 == 'Series Grouped'",
-        
-        uiOutput("select_cumulative")
-        
-      ),
-      
-      conditionalPanel(
-        condition = "input.tabs1 == 'Series Individual' | 
-                     input.tabs1 == 'Series Grouped' | 
-                     input.tabs1 == 'Daily Individual' | 
-                     input.tabs1 == 'Daily Grouped' | 
-                     input.tabs1 == 'Bout Individual' |
-                     input.tabs1 == 'Bout Grouped' |
-                     input.tabs1 == 'Hour Individual' |
-                     input.tabs1 == 'Hour Grouped'",
-        
-        uiOutput("display_points")
-        
-      ),
-      
-      conditionalPanel(
-        condition = "input.tabs1 == 'Series Grouped' | 
-                     input.tabs1 == 'Daily Grouped' |
-                     input.tabs1 == 'Hour Grouped' |
-                     input.tabs1 == 'Bout Grouped'",
+        condition = "input.tabs1 == 'Grouped - Series' | 
+                     input.tabs1 == 'Grouped - Summary' |
+                     input.tabs1 == 'Grouped - Hour' |
+                     input.tabs1 == 'Grouped - Bout'",
         
         uiOutput('select_no_groups'),
         
@@ -123,9 +104,31 @@ ui <- fluidPage(
       ),
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Hour Individual' |
-                     input.tabs1 == 'Series Grouped' | 
-                     input.tabs1 == 'Hour Grouped'",
+        condition = "input.tabs1 == 'Individual - Series' | 
+                     input.tabs1 == 'Grouped - Series'",
+        
+        uiOutput("select_cumulative")
+        
+      ),
+      
+      conditionalPanel(
+        condition = "input.tabs1 == 'Individual - Series' | 
+                     input.tabs1 == 'Grouped - Series' | 
+                     input.tabs1 == 'Individual - Summary' | 
+                     input.tabs1 == 'Grouped - Summary' | 
+                     input.tabs1 == 'Individual - Bout' |
+                     input.tabs1 == 'Grouped - Bout' |
+                     input.tabs1 == 'Individual - Hour' |
+                     input.tabs1 == 'Grouped - Hour'",
+        
+        uiOutput("display_points")
+        
+      ),
+      
+      conditionalPanel(
+        condition = "input.tabs1 == 'Individual - Hour' |
+                     input.tabs1 == 'Grouped - Series' | 
+                     input.tabs1 == 'Grouped - Hour'",
         
         uiOutput("display_errorbars"),
         
@@ -134,8 +137,8 @@ ui <- fluidPage(
       ),
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Daily Individual' | 
-                     input.tabs1 == 'Daily Grouped'",
+        condition = "input.tabs1 == 'Individual - Summary' | 
+                     input.tabs1 == 'Grouped - Summary'",
         
         uiOutput("download_view")
         
@@ -166,28 +169,28 @@ ui <- fluidPage(
         id = "tabs1",
         type = "pills",
         
-        tabPanel("Series Individual",
+        tabPanel("Individual - Series",
                  uiOutput("individual_plot_render")),
         
-        tabPanel("Daily Individual",
+        tabPanel("Individual - Summary",
                  uiOutput("daily_individual_plot_render")),
         
-        # tabPanel("Bout Individual",
+        # tabPanel("Individual - Bout",
         #          uiOutput("bout_individual_plot_render")),
         
-        tabPanel("Hour Individual",
+        tabPanel("Individual - Hour",
                  uiOutput("hour_individual_plot_render")),
         
-        tabPanel("Series Grouped",
+        tabPanel("Grouped - Series",
                  uiOutput("group_plot_render")),
         
-        tabPanel("Daily Grouped",
+        tabPanel("Grouped - Summary",
                  uiOutput("daily_grouped_plot_render")),
         
-        # tabPanel("Bout Grouped",
+        # tabPanel("Grouped - Bout",
         #          uiOutput("bout_grouped_plot_render")),
         
-        tabPanel("Hour Grouped",
+        tabPanel("Grouped - Hour",
                  uiOutput("hour_grouped_plot_render")),
         
         # tabPanel("Circadian",

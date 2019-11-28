@@ -1,35 +1,39 @@
-output$hour_individual_plot <- renderPlot({
+filter_individuals_and_periods = reactive({
+  periods = c(input$select_dark, input$select_light)
+  filtered = aggregate_individuals() %>%
+    dplyr::filter(period %in% periods) %>%
+    dplyr::filter(subject %in% input$select_subjects)
+  return(filtered)
+})
+
+output$hour_individual_plot <- renderPlotly({
   
-  num_parameters = counter$n
-  selected_parameters = lapply(1:num_parameters, function(x) {input[[paste0("select_parameter_", x)]]}) %>% unlist(recursive = TRUE)
+  ai = filter_individuals_and_periods()
   
-  aggregated_df = map_dfr(selected_parameters, 
-                          ~ aggregate_parameter(global_vars$data_agg, 
-                                                "t60", 
-                                                .x))
+  setDT(ai)[, "hour" := hour(ymd_hms(date_time))]
+  setDT(ai)[, hour := (hour+input$shift_zt)%%24]
+  print(ai)
   
-  setDT(aggregated_df)[, "hour" := hour(dmy_hms(date_time))]
-  setDT(aggregated_df)[, hour := (hour+input$shift_zt)%%24]
-  
-  aggregated_df$param = factor(aggregated_df$param, levels = unique(aggregated_df$param))
-  
-  p = aggregated_df %>%
-    dplyr::filter(subject %in% input$select_subjects) %>%
+  p = ai %>%
+    # dplyr::filter(subject %in% input$select_subjects) %>%
     group_by(hour, subject, param) %>%
-    summarise(mean = mean(value), sd = sd(value), light = dplyr::first(light))  %>%
+    summarise(sd = sd(mean), mean = mean(mean), light = dplyr::first(light))  %>%
     ggplot(aes(x = hour, y = mean)) +
-    geom_tile(data = . %>% filter(subject == input$select_subjects[1] & light != 1),
-              aes(x = (!light)*hour, y = 0 , width = 1, height = Inf),
-              fill = "grey50", alpha = 0.2, inherit.aes = F) +
+    # geom_tile(data = . %>% filter(subject == input$select_subjects[1] & light != 1),
+    #           aes(x = (!light)*hour, y = 0 , width = 1, height = Inf),
+    #           fill = "grey50", alpha = 0.2, inherit.aes = F) +
     geom_line(aes(color = subject)) +
     plot_points(input$display_points) +
     plot_errorbars(input$display_errorbars, subject) +
-    plot_facets(length(selected_parameters))
+    plot_facets(length(global_vars$selected_parameters))
     
-  p
+  ggplotly(p, tooltip = c("subject", "y")) %>%
+    layout(hovermode = "x",
+           showlegend = F,
+           autosize = T)
 })
 
 
 output$hour_individual_plot_render <- renderUI({
-  plotOutput("hour_individual_plot", height = input$plot_height, width = input$plot_width)
+  plotlyOutput("hour_individual_plot", height = input$plot_height, width = input$plot_width)
 })

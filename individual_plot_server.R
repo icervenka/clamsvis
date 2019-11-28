@@ -1,53 +1,67 @@
-output$individual_plot <- renderPlot({
-  
-  num_parameters = counter$n
-  selected_parameters = lapply(1:num_parameters, function(x) {input[[paste0("select_parameter_", x)]]}) %>% 
-    unlist(recursive = TRUE) %>%
-    unique
-  
-  aggregated_df = map_dfr(selected_parameters, 
-                          ~ aggregate_parameter(global_vars$data_agg, 
-                                                paste0("t", input$select_aggregation), 
-                                                .x))
-  aggregated_df$param = factor(aggregated_df$param, levels = unique(aggregated_df$param))
-  
-  #plot for individuals
+filter_individuals = reactive({
+  filtered = aggregate_individuals() %>%
+    dplyr::filter(subject %in% input$select_subjects,
+                  interval >= input$display_interval[1],
+                  interval <= input$display_interval[2])
+  return(filtered)
+})
+
+output$individual_plot <- renderPlotly({
   # TODO fix y-label to display name of parameter + unit
   # unit might be read from column_specs variable
   
-  global_vars$max_display_interval = max(aggregated_df$interval)
-  
-  aa = aggregated_df %>%
-    dplyr::filter(subject %in% input$select_subjects) %>%
-    dplyr::mutate(first_subject = case_when(subject == input$select_subjects[1] ~ 1, 
-                                            subject != input$select_subjects[1] ~ 0)) %>%
-    dplyr::filter(interval >= input$display_interval[1] & interval <= input$display_interval[2])
-  
-  aa %>%
-    ggplot(aes(x = interval, y = value, color = subject)) + 
-    # geom_tile(data = . %>% filter(subject == input$select_subjects[1]) %>% filter(light != 1),
-    #           aes(x = (!light)*interval, y = 0 , width = 1, height = Inf),
-    #           fill = "grey50", alpha = 0.2, inherit.aes = F) +
-    geom_tile(data = NULL,
-              aes(x = interval, y = 0 , width = 1, height = Inf*(!light)*first_subject),
-              fill = "grey50", alpha = 0.2, inherit.aes = F) +
-    geom_line() + 
+  ai = filter_individuals()
+  #print(ai)
+  p = ai %>%
+    ggplot(aes(x = interval, y = mean)) +
+    # geom_tile(data = NULL,
+    #           aes(x = interval, y = 0 , width = 1, height = Inf*(!light)*first_subject),
+    #           fill = "grey30", alpha = 0.2, inherit.aes = F) +
+    geom_line(aes(color = subject), size = 0.35) +
     plot_points(input$display_points) +
-    plot_facets(length(selected_parameters))
+    plot_facets(length(global_vars$selected_parameters))
+  
+  ggplotly(p, tooltip = c("subject", "y")) %>%
+    layout(hovermode = "x",
+           showlegend = F,
+           autosize = T)
 })
 
 output$individual_plot_render <- renderUI({
-  if(is.null(input$plot_height)) {
-    input_height = 500
-  } else {
-    input_height = input$plot_height
-  }
-  
-  if(is.null(input$plot_width)) {
-    input_width = 750
-  } else {
-    input_width = input$plot_width
-  }
-  
-  plotOutput("individual_plot", height = input_height, width = input_width)
+  plotlyOutput("individual_plot", 
+             height = global_options$plot_height * global_options$height_multiplier, 
+             width = global_options$plot_width)
 })
+
+
+
+
+
+# major_ticks = 720 / input$select_aggregation
+# #minor_ticks = major_ticks / 4
+# 
+# hchart(ai, type = "line", hcaes(x = interval, y = mean, group = subject), zoomtype = "x") %>% 
+#   hc_xAxis(
+#     startOnTick = TRUE,
+#     tickInterval = major_ticks,
+#     #minorTickInterval = minor_ticks,
+#     alternateGridColor = "#DDDDDD"
+#   ) %>%
+#   hc_tooltip(pointFormat = "<span style=\"color:{series.color}\">{series.name}</span>:
+#            {point.y:,.2f}<br/>",
+#              shared = TRUE,
+#              shadow = FALSE,
+#              padding = 2,
+#              borderWidth = 1,
+#              backgroundColor = "#FFFFFF"
+#              ) %>% 
+#   hc_plotOptions(
+#     line = list(
+#       lineWidth = 1,
+#       marker = list(
+#         radius = 3,
+#         symbol = "circle"
+#       )
+#     )
+#   ) %>% 
+#   hc_add_theme(hc_theme_smpl()) 

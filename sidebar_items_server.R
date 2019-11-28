@@ -2,6 +2,19 @@ output$file_input <- renderUI({
   fileInput("file1", "Upload your file")
 })
 
+parameter_boxes = reactive({
+  n <- counter$n
+  if (n >= 1) {
+    lapply(seq_len(n), function(i) {
+      selectInput(paste0("select_parameter_",i), label = NULL,
+                  choices = global_vars$parameters,
+                  selected =  input[[paste0("select_parameter_", i)]])
+    })
+  }
+})
+
+output$textbox_ui = renderUI({ parameter_boxes() })
+
 output$select_aggregation <- renderUI({
   shinyWidgets::sliderTextInput("select_aggregation", "Select aggregation [min]",
                                 choices = global_vars$time_aggregation_values %>% as.character, selected = "60")
@@ -88,7 +101,7 @@ output$display_statistics <- renderUI({
 output$select_dark <- renderUI({
   pickerInput(
     inputId = "select_dark", 
-    label = "Include dark intervals", 
+    label = "Include dark periods", 
     choices = global_vars$dark_intervals,
     selected = global_vars$dark_intervals, 
     options = list(
@@ -103,7 +116,7 @@ output$select_dark <- renderUI({
 output$select_light <- renderUI({
   pickerInput(
     inputId = "select_light", 
-    label = "Include light intervals", 
+    label = "Include light periods", 
     choices = global_vars$light_intervals, 
     selected = global_vars$light_intervals, 
     options = list(
@@ -142,10 +155,10 @@ output$bout_update <- renderUI({
 
 output$plot_width <- renderUI({
   sliderInput("plot_width", label = "Plot width [px]", min = 1000, 
-              max = 2000, value = 1500)
+              max = 2000, value = global_options$plot_width)
 })
 
 output$plot_height <- renderUI({
   sliderInput("plot_height", label = "Plot height [px]", min = 250, 
-              max = 1000, value = 500)
+              max = 1000, value = global_options$plot_height)
 })

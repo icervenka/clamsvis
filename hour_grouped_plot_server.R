@@ -1,11 +1,5 @@
 output$hour_grouped_plot <- renderPlot({
   
-  group_df = parse_group_inputs(input)
-  
-  num_parameters = counter$n
-  
-  selected_parameters = lapply(1:num_parameters, function(x) {input[[paste0("select_parameter_", x)]]}) %>% unlist(recursive = TRUE)
-  
   if(dim(group_df)[1] > 0) {
   
     aggregated_df = map_dfr(selected_parameters, 
