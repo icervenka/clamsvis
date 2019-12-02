@@ -25,7 +25,7 @@ readInput = observe({
   } else {
     interval = as.numeric(interval)
   }
-  global_vars$interval = interval
+  rv_data$interval = interval
   
   time_aggregation_values = intersect(seq(interval, 24*60, by = interval), 
                                       c(divisors(12*60)[-1], 1440))
@@ -50,10 +50,11 @@ readInput = observe({
   data_long = data_subject %>% select(subject, cropped) %>% unnest(cropped)
   data_agg = cbind.data.frame(data_long, aggdf)
   
-  global_vars$data_agg = data_agg
-  global_vars$column_specs = column_specs
-  global_vars$parameters = parameters
-  global_vars$subject_list = subject_list
-  global_vars$time_aggregation_values = time_aggregation_values
-  global_vars$time_aggregation_repeats = time_aggregation_repeats
+  rv_data$data_subject = data_subject
+  rv_data$data_agg = data_agg
+  rv_data$column_specs = column_specs
+  rv_data$parameters = parameters
+  rv_data$subject_list = subject_list
+  rv_data$time_aggregation_values = time_aggregation_values
+  rv_data$time_aggregation_repeats = time_aggregation_repeats
 })

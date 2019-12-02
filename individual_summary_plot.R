@@ -1,18 +1,9 @@
-filter_individual_periods = reactive({
-  periods = c(input$select_dark, input$select_light)
-  filtered = aggregate_individuals() %>%
-    dplyr::filter(period %in% periods) 
-  return(filtered)
-})
+output$individual_summary_plot <- renderPlotly({
 
-output$daily_individual_plot <- renderPlotly({
-
-  ai = filter_individual_periods()
+  ai = aggregate_individuals() %>%
+    filter_periods(c(input$select_dark, input$select_light))
   
-  output_df = ai %>%
-    group_by(light, subject, period)
-  
-  global_vars$output_df = output_df
+  rv_data$current_view = ai
   
   print("daily_plot_running")
   # p = output_df %>% 
@@ -62,8 +53,8 @@ output$daily_individual_plot <- renderPlotly({
       #         showlegend = F)
       plot_ly(x = ~subject, y = ~mean, color = ~subject,
               legendgroup = ~subject, showlegend = F,
-              colors = hue_pal()(length(global_vars$subject_list))) %>%
-      add_boxplot(boxmean='sd', notched = T,  text = ~paste("Period:", period),
+              colors = hue_pal()(length(rv_data$subject_list))) %>%
+      add_boxplot(boxmean='sd',   text = ~paste("Period:", period),
                   line = list(width = 1), boxpoints = "all", jitter = 0.3, pointpos = -5,
                   marker = list(opacity = 0.75, size = 3),
                   )
@@ -77,18 +68,16 @@ output$daily_individual_plot <- renderPlotly({
       #         showlegend = F)
       plot_ly(x = ~subject, y = ~mean, color = ~subject,
               legendgroup = ~subject, showlegend = F,
-              colors = hue_pal()(length(global_vars$subject_list))) %>%
-      add_boxplot(boxmean='sd', notched = T,  text = ~paste("Period:", period),
+              colors = hue_pal()(length(rv_data$subject_list))) %>%
+      add_boxplot(boxmean='sd',  text = ~paste("Period:", period),
                   line = list(width = 1), boxpoints = "all", jitter = 0.3, pointpos = -5,
                   marker = list(opacity = 0.75, size = 3),
       )
     
     subplot(p1, p2, shareY = T)
   }
-    # plot_ly(x = ~subject, y = ~mean, color = ~subject) %>%
-    # add_boxplot()
   
-  output_df %>% 
+  ai %>%
     group_by(param) %>%
     do(p = panel(.)) %>%
     subplot(nrows = NROW(.), shareX = F) %>%
@@ -98,8 +87,6 @@ output$daily_individual_plot <- renderPlotly({
   
 })
 
-output$daily_individual_plot_render <- renderUI({
-  plotlyOutput("daily_individual_plot",
-             height = global_options$plot_height * global_options$height_multiplier, 
-             width = global_options$plot_width)
+output$individual_summary_plot_render <- renderUI({
+  render_plot("individual_summary_plot")
 })

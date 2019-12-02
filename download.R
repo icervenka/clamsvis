@@ -5,7 +5,7 @@ output$download <- renderUI({
   fluidRow(
     map(1:5, function(x) {
       selectInput(paste0("select_aggregation_",x), paste0(label = "Select aggregation ", x, " [min]"), 
-                  choices = global_vars$time_aggregation_values, 
+                  choices = rv_data$time_aggregation_values, 
                   selected = default_aggregations[x])
     }),
     downloadButton("download_xlsx", label = "Download", icon = icon("download"))
@@ -15,35 +15,36 @@ output$download <- renderUI({
 output$download_xlsx <- downloadHandler(
   
   filename = function() {
-    paste0(format(Sys.time(), "%Y-%m-%d_%H-%M-%S"), "_clams", ".xlsx")
+    paste0(format(Sys.time(), "%Y-%m-%d_%H-%M-%S"), "_clams_vis", ".xlsx")
   },
   
   content = function(file) {
-    tagg = c("t10", "t30", "t60", "t180", "t720")
-  
-    data_parameter = map_dfr(parameters, function(x, data) {
-      df = dcast(data %>% select(subject, interval, date_time, light, x), interval + date_time + light ~ subject, value.var = x)
-      cbind.data.frame(df, parameter = x, stringsAsFactors = FALSE)
-    }, global_vars$data_subject %>% select(subject, cropped) %>% unnest(cropped))
-  
-    data_parameter = data_parameter %>% group_by(parameter) %>% nest()
-  
+    #tagg = c(10, 30, 60, 180, 720)
+    
+    tagg = map(1:5, function(x) {
+      input[[paste0("select_aggregation_",x)]]
+    }) %>% as.vector(mode = "integer")
+    
+    data_long_agg = map_dfr(tagg, function(x) {
+      df = map_aggregate(rv_data$parameters, rv_data$data_agg, x)
+      cbind.data.frame(df, aggregation = x, stringsAsFactors = FALSE)
+    })
+
     wb<-createWorkbook(type="xlsx")
   
-    walk(parameters, function(p) {
+    walk(rv_data$parameters, function(p, datap) {
       sheet <- createSheet(wb, sheetName = p)
-      walk2(tagg, seq_along(tagg), function(x, y, data, parameter, aggregation) {
+      dfp = datap %>% filter(param == p)
+      
+      walk(seq_along(tagg), function(a, dataa) {
+        dfa = dataa %>% 
+          dplyr::filter(aggregation == tagg[a]) %>% 
+          pivot_wider(id_cols = c(interval, date_time, light), names_from = subject, values_from = mean)
+
+        addDataFrame(as.data.frame(dfa), sheet, startRow=1, startColumn=(dim(dfa)[2]+1)*(a-1) + 1, row.names=FALSE)
   
-        parameter_df = data %>% filter(parameter == p) %>% `[[`(1,2)
-  
-        tt = aggregate(parameter_df %>% dplyr::select(date_time, light), aggregation %>% dplyr::select(x), first)
-        dt = aggregate(parameter_df %>% dplyr::select(-interval, -date_time, -light), aggregation %>% dplyr::select(x), aggregate_by(p))
-        mt = merge(tt, dt)
-  
-        addDataFrame(mt, sheet, startRow=1, startColumn=(dim(mt)[2]+1)*(y-1) + 1, row.names=FALSE)
-  
-      }, data = data_parameter, parameter = p, aggregation = aggdf)
-    })
+      }, dataa = dfp)
+    }, datap = data_long_agg)
     saveWorkbook(wb, file)
   }
 )

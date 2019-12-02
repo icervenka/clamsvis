@@ -12,7 +12,9 @@ ui <- fluidPage(
       uiOutput("file_input"),
       
       conditionalPanel(
-        condition = "input.tabs1 != 'Download'",
+        condition = "input.tabs1 != 'Download' &
+                     input.tabs1 != 'Individual - Scatter' &
+                     input.tabs1 != 'Grouped - Scatter'",
         
         tags$hr(),
       
@@ -36,7 +38,8 @@ ui <- fluidPage(
       
       conditionalPanel(
         condition = "input.tabs1 == 'Individual - Series' |             
-                     input.tabs1 == 'Individual - Hour'",
+                     input.tabs1 == 'Individual - Hour' | 
+                     input.tabs1 == 'Individual - Scatter'",
         
         uiOutput("select_subjects")
       ),
@@ -45,9 +48,20 @@ ui <- fluidPage(
         condition = "input.tabs1 == 'Individual - Series' | 
                      input.tabs1 == 'Grouped - Series' | 
                      input.tabs1 == 'Individual - Summary' | 
-                     input.tabs1 == 'Grouped - Summary'",
+                     input.tabs1 == 'Grouped - Summary' |
+                     input.tabs1 == 'Individual - Scatter'",
         
         uiOutput("select_aggregation")
+        
+      ),
+      
+      conditionalPanel(
+        condition = "input.tabs1 == 'Individual - Scatter' |
+                     input.tabs1 == 'Grouped - Scatter'",
+        
+        uiOutput("scatter_x"),
+        uiOutput("scatter_y"),
+        uiOutput("scatter_size")
         
       ),
       
@@ -65,9 +79,7 @@ ui <- fluidPage(
                      input.tabs1 == 'Grouped - Bout'",
         
         uiOutput("bout_aggregation"),
-        
         uiOutput("bout_mincount"),
-        
         uiOutput('bout_update'),
         
         tags$hr(),
@@ -76,10 +88,12 @@ ui <- fluidPage(
       conditionalPanel(
         condition = "input.tabs1 == 'Individual - Summary' | 
                      input.tabs1 == 'Grouped - Summary' | 
-                     input.tabs1 == 'Individual - Hour'",
+                     input.tabs1 == 'Individual - Hour' | 
+                     input.tabs1 == 'Grouped - Hour' |
+                     input.tabs1 == 'Individual - Scatter'| 
+                     input.tabs1 == 'Grouped - Scatter'",
         
         uiOutput("select_dark"),
-        
         uiOutput("select_light")
         
       ),
@@ -94,28 +108,26 @@ ui <- fluidPage(
       conditionalPanel(
         condition = "input.tabs1 == 'Grouped - Series' | 
                      input.tabs1 == 'Grouped - Summary' |
+                     input.tabs1 == 'Grouped - Scatter' |
                      input.tabs1 == 'Grouped - Hour' |
                      input.tabs1 == 'Grouped - Bout'",
         
         uiOutput('select_no_groups'),
-        
         uiOutput('display_groups')
         
       ),
       
-      conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Series' | 
-                     input.tabs1 == 'Grouped - Series'",
-        
-        uiOutput("select_cumulative")
-        
-      ),
+      # conditionalPanel(
+      #   condition = "input.tabs1 == 'Individual - Series' | 
+      #                input.tabs1 == 'Grouped - Series'",
+      #   
+      #   uiOutput("select_cumulative")
+      #   
+      # ),
       
       conditionalPanel(
         condition = "input.tabs1 == 'Individual - Series' | 
                      input.tabs1 == 'Grouped - Series' | 
-                     input.tabs1 == 'Individual - Summary' | 
-                     input.tabs1 == 'Grouped - Summary' | 
                      input.tabs1 == 'Individual - Bout' |
                      input.tabs1 == 'Grouped - Bout' |
                      input.tabs1 == 'Individual - Hour' |
@@ -131,7 +143,6 @@ ui <- fluidPage(
                      input.tabs1 == 'Grouped - Hour'",
         
         uiOutput("display_errorbars"),
-        
         # uiOutput("display_statistics")
         
       ),
@@ -148,9 +159,7 @@ ui <- fluidPage(
         condition = "input.tabs1 != 'Download'",
         
         tags$hr(),
-        
         uiOutput("plot_width"),
-        
         uiOutput("plot_height")
       ),
       
@@ -170,44 +179,35 @@ ui <- fluidPage(
         type = "pills",
         
         tabPanel("Individual - Series",
-                 uiOutput("individual_plot_render")),
+                 uiOutput("individual_series_plot_render")),
         
         tabPanel("Individual - Summary",
-                 uiOutput("daily_individual_plot_render")),
+                 uiOutput("individual_summary_plot_render")),
+        
+        tabPanel("Individual - Scatter",
+                 uiOutput("individual_scatter_plot_render")),
         
         # tabPanel("Individual - Bout",
-        #          uiOutput("bout_individual_plot_render")),
+        #          uiOutput("individual_activity_plot_render")),
         
         tabPanel("Individual - Hour",
-                 uiOutput("hour_individual_plot_render")),
+                 uiOutput("individual_hour_plot_render")),
         
         tabPanel("Grouped - Series",
-                 uiOutput("group_plot_render")),
+                 uiOutput("grouped_series_plot_render")),
         
         tabPanel("Grouped - Summary",
-                 uiOutput("daily_grouped_plot_render")),
+                 uiOutput("grouped_summary_plot_render")),
+        
+        tabPanel("Grouped - Scatter",
+                 uiOutput("grouped_scatter_plot_render")),
         
         # tabPanel("Grouped - Bout",
-        #          uiOutput("bout_grouped_plot_render")),
+        #          uiOutput("grouped_activity_plot_render")),
         
         tabPanel("Grouped - Hour",
-                 uiOutput("hour_grouped_plot_render")),
+                 uiOutput("grouped_hour_plot_render")),
         
-        # tabPanel("Circadian",
-        #          source("temp_ui.R", local = TRUE)[1]),
-        # 
-        # tabPanel("Sleep",
-        #          source("temp_ui.R", local = TRUE)[1]),
-        # 
-        # tabPanel("Movement",
-        #          source("temp_ui.R", local = TRUE)[1]),
-        # 
-        # tabPanel("Food",
-        #          source("temp_ui.R", local = TRUE)[1]),
-        # 
-        # tabPanel("Drink",
-        #          source("temp_ui.R", local = TRUE)[1]),
-        # 
         tabPanel("Download", 
                  uiOutput("download"))
         

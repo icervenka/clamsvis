@@ -11,7 +11,7 @@ library(purrr)
 library(broom)
 library(ggplot2)
 library(plotly)
-library(highcharter)
+library(scales)
 library(numbers)
 library(reshape2)
 library(matrixStats)
@@ -49,7 +49,6 @@ aggregate_parameter = function(data, time, param) {
   return(data)
 }
 
-
 parse_group_inputs = function(inp) {
   no_groups = 1
   if(!is.null(inp$select_no_groups)) {
@@ -77,17 +76,17 @@ parse_group_inputs = function(inp) {
   return(group_df)
 }
 
-min.mean.sd.max <- function(x) {
-  r <- c(min(x), mean(x) - sd(x), mean(x), mean(x) + sd(x), max(x))
-  names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
-  r
-}
-
-mean.sd <- function(x) {
-  r <- c(mean(x) - sd(x), mean(x), mean(x) + sd(x))
-  names(r) <- c("ymin", "y", "ymax")
-  r
-}
+# min.mean.sd.max <- function(x) {
+#   r <- c(min(x), mean(x) - sd(x), mean(x), mean(x) + sd(x), max(x))
+#   names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+#   r
+# }
+# 
+# mean.sd <- function(x) {
+#   r <- c(mean(x) - sd(x), mean(x), mean(x) + sd(x))
+#   names(r) <- c("ymin", "y", "ymax")
+#   r
+# }
 
 
 aggregate_with_specs = function(specs) {
@@ -125,13 +124,13 @@ plot_facets = function(n, formula = "param ~ ." ) {
   }
 }
 
-plot_jitter = function(condition_field) {
-  if("1" %in% condition_field) {
-    geom_jitter(shape = 21, colour = "grey50", fill = "white", size = 1, stroke = 0.25, width = 0.25)
-  } else {
-    geom_blank()
-  }
-}
+# plot_jitter = function(condition_field) {
+#   if("1" %in% condition_field) {
+#     geom_jitter(shape = 21, colour = "grey50", fill = "white", size = 1, stroke = 0.25, width = 0.25)
+#   } else {
+#     geom_blank()
+#   }
+# }
 
 # constants ------------------------------------------------
 column_specs = suppressMessages(read_delim("clams_column_specification.txt", delim = '\t'))
@@ -143,14 +142,29 @@ server <- function(input, output, session) {
   theme_set(theme_minimal(base_size = 12))
   
   rv_data = reactiveValues(
+    interval = NULL,
     data_agg = data.frame(),
+    current_view = NULL, 
     column_specs = data.frame(),
     parameters = NULL,
     subject_list = NULL,
     time_aggregation_values = NULL,
-    time_aggregation_repeats = NULL,
-    dark_intervals = NULL,
-    light_intervals = NULL
+    time_aggregation_repeats = NULL
+  )
+  
+  rv_filters = reactiveValues(
+    aggregation = 60,
+    counter = 1,
+    parameters = "vo2",
+    subjects = NULL,
+    max_interval = 0,
+    groups = NULL,
+    hour = FALSE,
+    dark_periods = NULL,
+    light_periods = NULL,
+    scatter_x = "vo2",
+    scatter_y = "vco2",
+    scatter_size = "heat"
   )
   
   rv_options = reactiveValues(
@@ -159,77 +173,25 @@ server <- function(input, output, session) {
     height_multiplier = 1
   )
   
-  rv_filters = reactiveValues(
-    aggregation = 60,
-    counter = 1,
-    parameters = TRUE,
-    subjects = TRUE,
-    intervals = TRUE,
-    max_interval = 0,
-    groups = TRUE
-  )
-  
-  global_vars = reactiveValues()
-  global_options = reactiveValues(
-    plot_width = 1500,
-    plot_height = 500,
-    height_multiplier = 1
-  )
-  
-  counter = reactiveValues(n = 1)
-  
-  observe({
-    # print("000")
-    # if(is.null(input$plot_height)) {
-    #   global_options$input_height = 500
-    # } else {
-    #   global_options$input_height = input$plot_height
-    # }
-    # print("aaa")
-    # if(is.null(input$plot_width)) {
-    #   global_options$input_width = 750
-    # } else {
-    #   global_options$input_width = input$plot_width
-    # }
-    # print("bbb")
-    # if(is.null(global_options$height_multiplier)) {
-    #   global_options$height_multiplier = 1
-    # } else {
-    #   global_options$height_multiplier = length(global_vars$selected_parameters)
-    # }
-    # print("ccc")
-
-    global_options$plot_width = input$plot_width
-
-    global_options$plot_height = input$plot_height
-
-    global_options$height_multiplier = length(global_vars$selected_parameters)
+  reactive({
+    print("plot_options_running")
+    rv_options$plot_width = input$plot_width
+    rv_options$plot_height = input$plot_height
+    rv_options$height_multiplier = length(rv_filters$parameters)
   })
   
   source("read_input.R", local = TRUE)
-
   source("reactive_exprs.R", local = TRUE)
-  
-  #source("select_boxes_server.R", local = TRUE)
-  
   source("sidebar_items.R", local = TRUE)
-
   source("individual_series_plot.R", local = TRUE)
-  
   source("individual_summary_plot.R", local = TRUE)
-  
-  source("individual_bout_plot.R", local = TRUE)
-  
+  source("individual_scatter_plot.R", local = TRUE)
+  source("individual_activity_plot.R", local = TRUE)
   source("individual_hour_plot.R", local = TRUE)
-  
   source("grouped_series_plot.R", local = TRUE)
-  
   source("grouped_summary_plot.R", local = TRUE)
-  
-  source("grouped_bout_plot.R", local = TRUE)
-  
+  source("grouped_scatter_plot.R", local = TRUE)
+  source("grouped_activity_plot.R", local = TRUE)
   source("grouped_hour_plot.R", local = TRUE)
-  
   source("download.R", local = TRUE)
-  
 }

@@ -1,15 +1,10 @@
-filter_groups = reactive({
-  filtered = aggregate_groups() %>%
-    dplyr::filter(interval >= input$display_interval[1],
-                  interval <= input$display_interval[2])
-  return(filtered)
-})
-
-output$group_plot <- renderPlotly({
+output$grouped_series_plot <- renderPlotly({
   
-  if(dim(global_vars$group_df)[1] > 0) {
+  if(dim(rv_data$group_df)[1] > 0) {
     
-    ag = filter_groups()
+    ag = aggregate_individuals() %>%
+      add_groups() %>%
+      filter_intervals(input$display_interval[1], input$display_interval[2])
     
     # pvals = map_dfr(1:max(group_aggregated_df$interval), function(x) {
     #   int_df = group_aggregated_df %>% dplyr::filter(interval == x)
@@ -25,7 +20,7 @@ output$group_plot <- renderPlotly({
       geom_line(aes(colour = group), size = 0.35) + 
       plot_points(input$display_points, group) +
       plot_errorbars(input$display_errorbars) + 
-      plot_facets(length(global_vars$selected_parameters))
+      plot_facets(length(rv_filters$parameters))
   }
   ggplotly(p, tooltip = c("subject", "group", "y")) %>%
     layout(hovermode = "x",
@@ -33,8 +28,6 @@ output$group_plot <- renderPlotly({
            autosize = T)
 })
 
-output$group_plot_render <- renderUI({
-  plotlyOutput("group_plot",
-             height = global_options$plot_height * global_options$height_multiplier, 
-             width = global_options$plot_width)
+output$grouped_series_plot_render <- renderUI({
+  render_plot('grouped_series_plot')
 })

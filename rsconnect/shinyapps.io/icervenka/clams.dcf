@@ -5,8 +5,8 @@ account: icervenka
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 124618
-bundleId: 2583646
+bundleId: 2632096
 url: https://icervenka.shinyapps.io/clams/
-when: 1573577078.27933
+when: 1575283632.23349
 asMultiple: FALSE
 asStatic: FALSE

@@ -3,11 +3,11 @@ output$file_input <- renderUI({
 })
 
 parameter_boxes = reactive({
-  n <- counter$n
+  n <- rv_filters$counter
   if (n >= 1) {
     lapply(seq_len(n), function(i) {
       selectInput(paste0("select_parameter_",i), label = NULL,
-                  choices = global_vars$parameters,
+                  choices = rv_data$parameters,
                   selected =  input[[paste0("select_parameter_", i)]])
     })
   }
@@ -15,14 +15,43 @@ parameter_boxes = reactive({
 
 output$textbox_ui = renderUI({ parameter_boxes() })
 
+
+output$scatter_x = renderUI({
+  pickerInput(
+    inputId = "scatter_x",
+    label = "X axis", 
+    choices = rv_data$parameters
+  )
+})
+
+output$scatter_y = renderUI({
+  pickerInput(
+    inputId = "scatter_y",
+    label = "Y axis", 
+    choices = rv_data$parameters
+  )
+})
+
+output$scatter_size = renderUI({
+  pickerInput(
+    inputId = "scatter_size",
+    label = "Size", 
+    choices = c("NULL", rv_data$parameters)
+  )
+})
+
+output$scatter_update = renderUI({
+  actionButton("scatter_update", "Update scatterplot parameters")
+})
+
 output$select_aggregation <- renderUI({
   shinyWidgets::sliderTextInput("select_aggregation", "Select aggregation [min]",
-                                choices = global_vars$time_aggregation_values %>% as.character, selected = "60")
+                                choices = rv_data$time_aggregation_values %>% as.character, selected = "60")
 })
 
 output$display_interval <- renderUI({
   sliderInput("display_interval", label = "Display intervals", min = 1, 
-              max = global_vars$max_display_interval, value = c(0, global_vars$max_display_interval), step = 1)
+              max = rv_filters$max_interval, value = c(0, rv_filters$max_interval), step = 1)
 })
 
 output$select_cumulative <- renderUI({
@@ -36,8 +65,8 @@ output$select_subjects <- renderUI({
   pickerInput(
     inputId = "select_subjects", 
     label = "Select subjects", 
-    choices = global_vars$subject_list, 
-    selected = global_vars$subject_list[1:2],
+    choices = rv_data$subject_list, 
+    selected = rv_data$subject_list[1:2],
     options = list(
       `actions-box` = TRUE, 
       size = 15,
@@ -54,7 +83,7 @@ output$shift_zt <- renderUI({
 
 output$select_no_groups <- renderUI({
   # Create the checkboxes and select them all by default
-  numericInput("select_no_groups", label = "Select number of groups", value = 1, min = 1, max = length(global_vars$subject_list)/2)
+  numericInput("select_no_groups", label = "Select number of groups", value = 1, min = 1, max = length(rv_data$subject_list)/2)
 })
 
 output$display_groups <- renderUI({
@@ -65,7 +94,7 @@ output$display_groups <- renderUI({
         pickerInput(
           inputId = paste0("group_no_", i), 
           label = paste0("Group: ", i), 
-          choices = global_vars$subject_list, 
+          choices = rv_data$subject_list, 
           selected = input[[paste0("group_no_", as.character(i))]],
           options = list(
             `actions-box` = TRUE, 
@@ -102,8 +131,8 @@ output$select_dark <- renderUI({
   pickerInput(
     inputId = "select_dark", 
     label = "Include dark periods", 
-    choices = global_vars$dark_intervals,
-    selected = global_vars$dark_intervals, 
+    choices = rv_filters$dark_periods,
+    selected = rv_filters$dark_periods, 
     options = list(
       `actions-box` = TRUE, 
       size = 15,
@@ -117,8 +146,8 @@ output$select_light <- renderUI({
   pickerInput(
     inputId = "select_light", 
     label = "Include light periods", 
-    choices = global_vars$light_intervals, 
-    selected = global_vars$light_intervals, 
+    choices = rv_filters$light_periods, 
+    selected = rv_filters$light_periods, 
     options = list(
       `actions-box` = TRUE, 
       size = 15,
@@ -133,9 +162,9 @@ output$download_view <- renderUI({
 })
 
 output$download_current_view <- downloadHandler(
-  filename = "daily_view.csv",
+  filename = "current_view.csv",
   content = function(file) {
-    data = global_vars$output_df
+    data = rv_data$current_view
     write.csv(data, file)
   }
 )
@@ -146,7 +175,7 @@ output$bout_mincount <- renderUI({
 
 output$bout_aggregation <- renderUI({
   shinyWidgets::sliderTextInput("bout_aggregation", "Select min bout length [min]",
-                                choices = global_vars$time_aggregation_values %>% as.character, selected = "60")
+                                choices = rv_data$time_aggregation_values %>% as.character, selected = "60")
 })
 
 output$bout_update <- renderUI({
@@ -155,10 +184,10 @@ output$bout_update <- renderUI({
 
 output$plot_width <- renderUI({
   sliderInput("plot_width", label = "Plot width [px]", min = 1000, 
-              max = 2000, value = global_options$plot_width)
+              max = 2000, value = 1500)
 })
 
 output$plot_height <- renderUI({
   sliderInput("plot_height", label = "Plot height [px]", min = 250, 
-              max = 1000, value = global_options$plot_height)
+              max = 1000, value = 500)
 })
