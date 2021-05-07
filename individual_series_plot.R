@@ -1,10 +1,10 @@
 output$individual_series_plot <- renderPlotly({
   # TODO fix y-label to display name of parameter + unit
-
+  print("individual_series_running_1")
   ai = aggregate_individuals() %>%
     filter_subjects(input$select_subjects) %>%
     filter_intervals(input$display_interval[1], input$display_interval[2])
-
+  print("individual_series_running_2")
   p = ai %>%
     ggplot(aes(x = interval, y = mean)) +
     # geom_tile(data = NULL,
@@ -13,8 +13,9 @@ output$individual_series_plot <- renderPlotly({
     geom_line(aes(color = subject), size = 0.35) +
     plot_points(input$display_points) +
     plot_facets(length(rv_filters$parameters))
+  print("individual_series_running_3")
   
-  ggplotly(p, tooltip = c("subject", "y")) %>%
+  ggplotly(p, tooltip = c("subject", "y"), width = input$plot_width, height = input$plot_height*rv_options$height_multiplier) %>%
     layout(hovermode = "x",
            showlegend = F,
            autosize = T)

@@ -25,11 +25,11 @@ options(java.parameters = "-Xmx2048m")
 # functions -----------------------------------------------
 find_interval = function(df, group_col, date_time_col, id_col) {
   date_time_df = df %>% pivot_wider(names_from = {{group_col}}, values_from = {{date_time_col}}, id_cols = {{id_col}})
-  interval = map_dfr(date_time_df[-1], function(x) {diff(x %>% as_datetime) %>% as.integer}) %>%
-  pivot_longer(everything(), names_to = "subject", values_to = "interval") %>%
-  dplyr::select(interval) %>%
-  unique %>%
-  pull
+  interval = map_dfr(date_time_df[-1], function(x) {diff(x %>% as_datetime) %>% as.integer}) #%>%
+  #pivot_longer(everything(), names_to = "subject", values_to = "interval") %>%
+  #dplyr::select(interval) #%>%
+  # unique %>%
+  # pull
   return(interval)
 }
 
@@ -173,7 +173,7 @@ server <- function(input, output, session) {
     height_multiplier = 1
   )
   
-  reactive({
+  observe({
     print("plot_options_running")
     rv_options$plot_width = input$plot_width
     rv_options$plot_height = input$plot_height

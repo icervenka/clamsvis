@@ -7,12 +7,13 @@ observeEvent(input$rm_btn, {
 })
 
 select_parameters = observe({
+  print("parameters_running")
   num_parameters = rv_filters$counter
   selected_parameters = lapply(1:num_parameters, function(x) {input[[paste0("select_parameter_", x)]]}) %>% 
     unlist(recursive = TRUE) %>%
     unique
   rv_filters$parameters = selected_parameters
-  print("parameters_running")
+  
 })
 
 update_aggregated_filters = function(df) {
@@ -31,26 +32,16 @@ map_aggregate= function(params, data, time) {
 }
 
 
-aggregate_individuals = reactive({
-  print("individuals_running")
-  
-  # aggregated_df = map_dfr(rv_filters$parameters, 
-  #                         ~ aggregate_parameter(rv_data$data_agg, 
-  #                                               paste0("t", input$select_aggregation), 
-  #                                               .x))
-  # aggregated_df$param = factor(aggregated_df$param, levels = unique(aggregated_df$param))
-  
+aggregate_individuals = eventReactive(c(rv_filters$parameters, rv_data$data_agg, input$select_aggregation), ignoreNULL = TRUE, {
+  print("individuals_running_1")
   aggregated_df = map_aggregate(rv_filters$parameters, rv_data$data_agg, input$select_aggregation)
   update_aggregated_filters(aggregated_df)
+  print("individuals_running_2")
   return(aggregated_df)
 })
 
 aggregate_scatter = reactive({
   print("scatter_running")
-  # aggregated_df = map_dfr(rv_data$parameters, 
-  #                         ~ aggregate_parameter(rv_data$data_agg, 
-  #                                               paste0("t", input$select_aggregation), 
-  #                                               .x))
   aggregated_df = map_aggregate(rv_data$parameters, rv_data$data_agg, input$select_aggregation)
   update_aggregated_filters(aggregated_df)
   return(aggregated_df)
@@ -58,11 +49,6 @@ aggregate_scatter = reactive({
 
 aggregate_hour = reactive({
   print("hour_running")
-  # aggregated_df = map_dfr(rv_filters$parameters, 
-  #                         ~ aggregate_parameter(rv_data$data_agg, 
-  #                                               paste0("t", "60"), 
-  #                                               .x))
-  # aggregated_df$param = factor(aggregated_df$param, levels = unique(aggregated_df$param))
   aggregated_df = map_aggregate(rv_filters$parameters, rv_data$data_agg, "60")
   setDT(aggregated_df)[, "hour" := hour(ymd_hms(date_time))]
   setDT(aggregated_df)[, "hour" := (hour+input$shift_zt)%%24]
@@ -82,59 +68,12 @@ add_groups = function(df) {
     ag = merge(df, rv_data$group_df, by = "subject")
     
     ag =  ag %>%
-      # group_by(interval, light, period, group, param) %>% 
       group_by_at(vars(-subject, -date_time, -mean)) %>% 
       summarise(sd = sd(mean), mean = mean(mean))
     print(ag)
   }
   return(ag)
 }
-
-
-# aggregate_groups = reactive({
-#   if(dim(rv_data$group_df)[1] > 0) {
-#     print("groups_running")
-#     ai = aggregate_individuals()
-#     ag = merge(ai, rv_data$group_df, by = "subject")
-#     ag =  ag %>%
-#       group_by(interval, light, period, group, param) %>% 
-#       summarise(sd = sd(mean), mean = mean(mean))
-#   }
-#   return(ag)
-# })
-
-# filter_chain_individual_series = reactive({
-#   aggregate_individuals() %>%
-#     filter_subjects(input$select_subjects) %>%
-#     filter_intervals(input$display_interval[1], input$display_interval[2])
-# })
-
-# filter_chain_individual_summary = reactive({
-#   aggregate_individuals() %>%
-#     filter_periods(c(input$select_dark, input$select_light))
-# })
-
-# filter_chain_individual_scatter = reactive({
-#   aggregate_scatter() %>%
-#     filter_subjects(input$select_subjects) %>%
-#     filter_periods(c(input$select_dark, input$select_light))
-# })
-
-# filter_chain_individual_hour = reactive({
-#   aggregate_hour() %>%
-#     filter_subjects(input$select_subjects) %>%
-#     filter_periods(c(input$select_dark, input$select_light))
-# })
-
-# filter_chain_grouped_series = reactive({
-#   aggregate_groups() %>%
-#     filter_intervals(input$display_interval[1], input$display_interval[2])
-# })
-
-# filter_chain_grouped_summary = reactive({
-#   aggregate_groups() %>%
-#     filter_periods(c(input$select_dark, input$select_light))
-# })
 
 filter_subjects = function(df, subjects) {
   df %>%
@@ -150,7 +89,7 @@ filter_periods = function(df, periods) {
 }
 
 render_plot = function(out_plot) {
-  plotlyOutput(out_plot,
-               height = input$plot_height * rv_options$height_multiplier, 
-               width = input$plot_width)
+  plotlyOutput(out_plot) #,
+               # height = input$plot_height * rv_options$height_multiplier, 
+               # width = input$plot_width)
 }

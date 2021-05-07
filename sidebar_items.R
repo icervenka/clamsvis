@@ -169,17 +169,17 @@ output$download_current_view <- downloadHandler(
   }
 )
 
-output$bout_mincount <- renderUI({
-  numericInput("bout_mincount", label = "Bout minimum count", value = 5)
+output$activity_mincount <- renderUI({
+  numericInput("activity_mincount", label = "Bout minimum count", value = 5)
 })
 
-output$bout_aggregation <- renderUI({
-  shinyWidgets::sliderTextInput("bout_aggregation", "Select min bout length [min]",
+output$activity_aggregation <- renderUI({
+  shinyWidgets::sliderTextInput("activity_aggregation", "Select min bout length [min]",
                                 choices = rv_data$time_aggregation_values %>% as.character, selected = "60")
 })
 
-output$bout_update <- renderUI({
-  actionButton("bout_update", "Update bout parameters")
+output$activity_update <- renderUI({
+  actionButton("activity_update", "Update bout parameters")
 })
 
 output$plot_width <- renderUI({

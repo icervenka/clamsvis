@@ -1,0 +1,18 @@
+colname	display	app	required	aggregate	type
+CHAN	Subject	subject	1	NULL	character
+DATE/TIME	Date-Time	date_time	1	first	character
+ROOM LIGHT	Light	light	1	first	numeric
+VO2	VO2	vo2	0	mean	double
+VCO2	VCO2	vco2	0	mean	double
+RER	RER	rer	0	mean	double
+HEAT	Heat	heat	0	mean	double
+NA	XY Total Movement	xyt	0	sum	numeric
+XTOT	X Total Movement	xt	0	sum	numeric
+XAMB	X Ambulatory Movement	xa	0	sum	numeric
+NA	X Fine Movement	xf	0	sum	numeric
+YTOT	Y Total Movement	yt	0	sum	numeric
+YAMB	Y Ambulatory Movement	ya	0	sum	numeric
+NA	Y Fine Movement	yf	0	sum	numeric
+ZTOT	Z Movement	z	0	sum	numeric
+DRINK1	Drink	drink	0	sum	double
+FEED1	Feed	feed	0	sum	double

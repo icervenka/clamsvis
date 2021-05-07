@@ -75,12 +75,12 @@ ui <- fluidPage(
       
       
       conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Bout' |
-                     input.tabs1 == 'Grouped - Bout'",
+        condition = "input.tabs1 == 'Individual - Activity' |
+                     input.tabs1 == 'Grouped - Activity'",
         
-        uiOutput("bout_aggregation"),
-        uiOutput("bout_mincount"),
-        uiOutput('bout_update'),
+        uiOutput("activity_aggregation"),
+        uiOutput("activity_mincount"),
+        uiOutput('activity_update'),
         
         tags$hr(),
       ),
@@ -110,7 +110,7 @@ ui <- fluidPage(
                      input.tabs1 == 'Grouped - Summary' |
                      input.tabs1 == 'Grouped - Scatter' |
                      input.tabs1 == 'Grouped - Hour' |
-                     input.tabs1 == 'Grouped - Bout'",
+                     input.tabs1 == 'Grouped - Activity'",
         
         uiOutput('select_no_groups'),
         uiOutput('display_groups')
@@ -128,8 +128,8 @@ ui <- fluidPage(
       conditionalPanel(
         condition = "input.tabs1 == 'Individual - Series' | 
                      input.tabs1 == 'Grouped - Series' | 
-                     input.tabs1 == 'Individual - Bout' |
-                     input.tabs1 == 'Grouped - Bout' |
+                     input.tabs1 == 'Individual - Activity' |
+                     input.tabs1 == 'Grouped - Activity' |
                      input.tabs1 == 'Individual - Hour' |
                      input.tabs1 == 'Grouped - Hour'",
         
@@ -187,7 +187,7 @@ ui <- fluidPage(
         tabPanel("Individual - Scatter",
                  uiOutput("individual_scatter_plot_render")),
         
-        # tabPanel("Individual - Bout",
+        # tabPanel("Individual - Activity",
         #          uiOutput("individual_activity_plot_render")),
         
         tabPanel("Individual - Hour",
@@ -202,7 +202,7 @@ ui <- fluidPage(
         tabPanel("Grouped - Scatter",
                  uiOutput("grouped_scatter_plot_render")),
         
-        # tabPanel("Grouped - Bout",
+        # tabPanel("Grouped - Activity",
         #          uiOutput("grouped_activity_plot_render")),
         
         tabPanel("Grouped - Hour",

@@ -19,7 +19,6 @@ output$download_xlsx <- downloadHandler(
   },
   
   content = function(file) {
-    #tagg = c(10, 30, 60, 180, 720)
     
     tagg = map(1:5, function(x) {
       input[[paste0("select_aggregation_",x)]]

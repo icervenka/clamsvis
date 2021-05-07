@@ -5,7 +5,7 @@ readInput = observe({
 
   # if file is not uploaded provide temp file to show results
   if(is.null(file)) {
-  file <- read_delim("2019-11-19_tse.csv", delim = ',',col_types = "ciciddddiiiiiiiidd")
+  file <- read_delim("2019-12-04_classic.csv", delim = ',',col_types = "ciciddddiiiiiiiidd")
   } else if(toupper(ext) == "CSV" | toupper(ext) == "TXT") {
     file.rename(file$datapath,
                 paste(file$datapath, ext, sep="."))
@@ -19,6 +19,7 @@ readInput = observe({
   names(parameters) = column_specs %>% filter(parameter == 1) %>% select(display_app) %>% pull
   
   interval = find_interval(data, subject, date_time, interval)
+  print(interval)
   #interval = 2
   if(length(interval) != 1) {
     stop("One of subject time series is not regular. Please update your data and try again")

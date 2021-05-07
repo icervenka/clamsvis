@@ -1,0 +1,9 @@
+subject,condition,group,genotype
+a,a,a,a
+b,a,a,b
+c,a,b,a
+d,a,b,b
+e,b,a,a
+f,b,a,b
+g,b,b,a
+h,b,b,b
