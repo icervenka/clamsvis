@@ -1,3 +1,5 @@
+# parameter assignment ------
+# from input form
 custom_param_inputs = reactive({
   n = rv_counters$param_input
   required = list(
@@ -166,7 +168,8 @@ assign_group_inputs = eventReactive(
   }
 )
 
-
+# group assignment ------
+# from input form
 
 output$load_groups_file = renderUI({
   list(
@@ -265,3 +268,78 @@ output$render_group_info = renderUI({
     )
   )
 })
+
+# data preview ------
+output$preview = renderUI({
+  shinyjs::hidden(
+    div(id = "prev_div",
+      hr(),
+      h4("Data Preview"),
+      renderTable(head(read_data()), striped = T)
+    )
+  )
+})
+
+# download preview ------
+output$download = renderUI({
+  default_aggregations = c(10, 30, 60, 180, 720)
+
+  fluidRow(
+    column(
+      12,
+      tags$br(),
+      purrr::map(1:5, function(x) {
+        selectInput(paste0("select_aggregation_", x),
+          paste0(label = "Select aggregation ", x, " [min]"),
+          choices = valid_freq(),
+          selected = default_aggregations[x]
+        )
+      }),
+      downloadButton("download_xlsx",
+        label = "Download",
+        icon = icon("download")
+      )
+    )
+  )
+})
+
+output$download_xlsx = downloadHandler(
+  filename = function() {
+    paste0(format(Sys.time(), "%Y-%m-%d_%H-%M-%S"), "_clams_vis", ".xlsx")
+  },
+  content = function(file) {
+    tagg = purrr::map(1:5, function(x) {
+      input[[paste0("select_aggregation_", x)]]
+    }) %>% as.vector(mode = "integer")
+
+    data_long_agg = purrr::map_dfr(tagg, function(x) {
+      df = aggregate_selected_params(get_data_agg_combined(), x, get_parameters())
+      cbind.data.frame(df, aggregation = x, stringsAsFactors = FALSE)
+    })
+
+    wb = xlsx::createWorkbook(type = "xlsx")
+
+    purrr::walk(get_parameters(), function(p, datap) {
+      sheet = xlsx::createSheet(wb, sheetName = p)
+      dfp = datap %>% filter(param == p)
+
+      purrr::walk(seq_along(tagg), function(a, dataa) {
+        dfa = dataa %>%
+          dplyr::filter(aggregation == tagg[a]) %>%
+          tidyr::pivot_wider(
+            id_cols = c(interval, date_time, light),
+            names_from = subject,
+            values_from = mean
+          )
+
+        xlsx::addDataFrame(as.data.frame(dfa),
+          sheet,
+          startRow = 1,
+          startColumn = (dim(dfa)[2] + 1) * (a - 1) + 1,
+          row.names = FALSE
+        )
+      }, dataa = dfp)
+    }, datap = data_long_agg)
+    xlsx::saveWorkbook(wb, file)
+  }
+)
