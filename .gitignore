@@ -1,2 +1,5 @@
+.gitignore
 .Rhistory
 ._*
+.DS_Store
+input_tmp
