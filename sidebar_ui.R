@@ -54,3 +54,63 @@ output$parameter_select = renderUI({
     tags$hr()
   )
 })
+
+output$select_aggregation = renderUI({
+  shinyWidgets::sliderTextInput("select_aggregation",
+    "Select aggregation [min]",
+    choices = valid_freq(),
+    selected = rv$selected_aggregation
+  )
+})
+
+output$display_interval = renderUI({
+  sliderInput("display_interval",
+    label = "Display intervals",
+    min = 1,
+    max = get_max_interval(),
+    value = c(rv$selected_interval_low, rv$selected_interval_high),
+    step = 1
+  )
+})
+
+output$select_phase = renderUI({
+  list(
+    pickerInput(
+      inputId = "select_dark",
+      label = "Include dark periods",
+      choices = get_dark_periods(),
+      selected = get_dark_periods(),
+      options = list(
+        `actions-box` = TRUE,
+        size = 15,
+        `selected-text-format` = "count > 15"
+      ),
+      multiple = TRUE
+    ),
+    pickerInput(
+      inputId = "select_light",
+      label = "Include light periods",
+      choices = get_light_periods(),
+      selected = get_light_periods(),
+      options = list(
+        `actions-box` = TRUE,
+        size = 15,
+        `selected-text-format` = "count > 15"
+      ),
+      multiple = TRUE
+    )
+  )
+})
+
+output$download_view = renderUI({
+  downloadButton("download_current_view", label = "Download View", icon = icon("download"))
+})
+
+output$download_current_view = downloadHandler(
+  filename = "current_view.csv",
+  content = function(file) {
+    data = rv$current_view %>%
+      mutate(across(where(is.numeric), ~ round(., digits = 5)))
+    write.csv(data, file, row.names = F, quote = F)
+  }
+)
