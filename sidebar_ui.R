@@ -114,3 +114,42 @@ output$download_current_view = downloadHandler(
     write.csv(data, file, row.names = F, quote = F)
   }
 )
+
+output$select_cumulative = renderUI({
+  radioButtons("select_cumulative",
+               label = "Plot",
+               choices = list("Interval data" = "mean", "Cumulative data" = "cumsum"),
+               selected = "mean"
+  )
+})
+
+output$display_point_markers = renderUI({
+  list(
+    tags$hr(),
+    checkboxGroupInput("display_point_markers", NULL,
+      choices = c("Show point markers" = 1)
+    )
+  )
+})
+
+output$display_stat_header = renderUI({
+  req(input$individual_grouped_select == "group")
+  list(
+    tags$hr(),
+    tags$div(tags$p(tags$b("Display statistics")))
+  )
+})
+
+output$display_sd = renderUI({
+  req(input$individual_grouped_select == "group")
+  checkboxGroupInput("display_sd", NULL,
+    choices = c("Show SD" = 1)
+  )
+})
+
+output$display_stat_table = renderUI({
+  req(input$individual_grouped_select == "group")
+  checkboxGroupInput("display_stat_table", NULL,
+    choices = c("Show stat table" = 1)
+  )
+})
