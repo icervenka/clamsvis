@@ -153,3 +153,63 @@ output$display_stat_table = renderUI({
     choices = c("Show stat table" = 1)
   )
 })
+
+output$shift_zt = renderUI({
+  sliderInput("shift_zt",
+    label = "Shift Zeitgeber 0 to:", min = 0,
+    max = 23, value = 6, step = 1
+  )
+})
+
+output$scatter_controls = renderUI({
+  list(
+    pickerInput(
+      inputId = "scatter_x",
+      label = "X axis",
+      choices = get_parameters()
+    ),
+    pickerInput(
+      inputId = "scatter_y",
+      label = "Y axis",
+      choices = get_parameters()
+    ),
+    pickerInput(
+      inputId = "scatter_size",
+      label = "Size",
+      choices = c("NULL", get_parameters())
+    ),
+    checkboxGroupInput("plot_trendline", NULL,
+                       choices = c("Plot trendline" = 1)
+    )
+  )
+})
+
+output$activity_controls = renderUI({
+  list(
+    selectInput("select_activity_parameter",
+                label = NULL,
+                choices = get_parameters(),
+                selected = rv$selected_params[1]
+    ),
+    shinyWidgets::sliderTextInput("activity_aggregation",
+      "Activity window [min]",
+      choices = valid_freq(),
+      selected = "60"
+    ),
+    numericInput("activity_mincount", label = "Min value per activity window", value = 5)
+  )
+})
+
+output$plot_width = renderUI({
+  sliderInput("plot_width",
+    label = "Plot width [px]", min = 1000,
+    max = 2000, value = 1500
+  )
+})
+
+output$plot_height = renderUI({
+  sliderInput("plot_height",
+    label = "Plot height [px]", min = 250,
+    max = 1000, value = 500
+  )
+})
