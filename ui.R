@@ -1,218 +1,193 @@
-ui <- fluidPage(
+### ui -------------------------------------------------------------------------
+ui = fluidPage(
+  shinyjs::useShinyjs(),
   titlePanel("CLAMS-VIS"),
-  
-  tags$style(type="text/css",
-             ".shiny-output-error { visibility: hidden; }",
-             ".shiny-output-error:before { visibility: hidden; }"),
-  
+  tags$style(
+    type = "text/css",
+    ".shiny-output-error { visibility: hidden; }",
+    ".shiny-output-error:before { visibility: hidden; }"
+  ),
   sidebarLayout(
     sidebarPanel(
       "",
-      
-      uiOutput("file_input"),
-      
       conditionalPanel(
-        condition = "input.tabs1 != 'Download' &
-                     input.tabs1 != 'Individual - Scatter' &
-                     input.tabs1 != 'Grouped - Scatter'",
-        
-        tags$hr(),
-      
-        uiOutput("textbox_ui"),
-        
-        fluidRow(
-          column(
-            align = 'right',
-            actionButton("add_btn", "Add"),
-            width = 2
-          ),
-          column(
-            align = 'right',
-            actionButton("rm_btn", "Remove "),
-            width = 2
-          )
-        ),
-        
-        tags$hr(),
+        condition = "input.tabs_main == 'Load Files'",
+        uiOutput("example_files")
       ),
-      
       conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Series' |             
-                     input.tabs1 == 'Individual - Hour' | 
-                     input.tabs1 == 'Individual - Scatter'",
-        
+        condition = "input.tabs_main != 'Download' &
+                     input.tabs_main != 'Load Files' &
+                     input.tabs_main != 'Info'",
+        uiOutput("individual_grouped_select"),
+      ),
+      conditionalPanel(
+        condition = "input.tabs_main != 'Download' &
+                     input.tabs_main != 'Load Files' &
+                     input.tabs_main != 'Summary' &
+                     input.tabs_main != 'Info'",
+
+        # in summary all subjects can be displayed at the same time or removed
+        # by clicking on plotly plot
         uiOutput("select_subjects")
       ),
-      
       conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Series' | 
-                     input.tabs1 == 'Grouped - Series' | 
-                     input.tabs1 == 'Individual - Summary' | 
-                     input.tabs1 == 'Grouped - Summary' |
-                     input.tabs1 == 'Individual - Scatter'",
-        
-        uiOutput("select_aggregation")
-        
-      ),
-      
-      conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Scatter' |
-                     input.tabs1 == 'Grouped - Scatter'",
-        
-        uiOutput("scatter_x"),
-        uiOutput("scatter_y"),
-        uiOutput("scatter_size")
-        
-      ),
-      
-      conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Series' | 
-                     input.tabs1 == 'Grouped - Series'",
-        
-        uiOutput("display_interval")
-        
-      ),
-      
-      
-      conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Activity' |
-                     input.tabs1 == 'Grouped - Activity'",
-        
-        uiOutput("activity_aggregation"),
-        uiOutput("activity_mincount"),
-        uiOutput('activity_update'),
-        
+        condition = "input.tabs_main != 'Download' &
+                     input.tabs_main != 'Scatterplot' &
+                     input.tabs_main != 'Activity' &
+                     input.tabs_main != 'Load Files' &
+                     input.tabs_main != 'Info'",
         tags$hr(),
+        uiOutput("parameter_select")
       ),
-      
       conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Summary' | 
-                     input.tabs1 == 'Grouped - Summary' | 
-                     input.tabs1 == 'Individual - Hour' | 
-                     input.tabs1 == 'Grouped - Hour' |
-                     input.tabs1 == 'Individual - Scatter'| 
-                     input.tabs1 == 'Grouped - Scatter'",
-        
-        uiOutput("select_dark"),
-        uiOutput("select_light")
-        
+        condition = "input.tabs_main == 'Summary' |
+                     input.tabs_main == 'Time Series' |
+                     input.tabs_main == 'Scatterplot'",
+        uiOutput("select_aggregation")
       ),
-      
       conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Hour' |
-                     input.tabs1 == 'Grouped - Hour'",
-        
+        condition = "input.tabs_main == 'Scatterplot'",
+        uiOutput("scatter_controls")
+      ),
+      conditionalPanel(
+        condition = "input.tabs_main == 'Time Series'",
+        uiOutput("display_interval")
+      ),
+      conditionalPanel(
+        condition = "input.tabs_main == 'Time Series'",
+        uiOutput("select_cumulative")
+      ),
+      conditionalPanel(
+        condition = "input.tabs_main == 'Activity'",
+        uiOutput("activity_controls")
+      ),
+      conditionalPanel(
+        condition = "input.tabs_main == 'Summary' |
+                     input.tabs_main == 'Scatterplot' |
+                     input.tabs_main == 'Circadian'",
+        uiOutput("select_phase")
+      ),
+      conditionalPanel(
+        condition = "input.tabs_main == 'Summary' |
+                     input.tabs_main == 'Time Series' |
+                     input.tabs_main == 'Circadian'",
+        uiOutput("display_stat_header")
+      ),
+      conditionalPanel(
+        condition = "input.tabs_main == 'Time Series' |
+                     input.tabs_main == 'Circadian'",
+        uiOutput("display_sd")
+      ),
+      conditionalPanel(
+        condition = "input.tabs_main == 'Summary' |
+                     input.tabs_main == 'Time Series' |
+                     input.tabs_main == 'Circadian'",
+        uiOutput("display_stat_table")
+      ),
+      conditionalPanel(
+        condition = "input.tabs_main == 'Circadian'",
         uiOutput("shift_zt")
       ),
-      
       conditionalPanel(
-        condition = "input.tabs1 == 'Grouped - Series' | 
-                     input.tabs1 == 'Grouped - Summary' |
-                     input.tabs1 == 'Grouped - Scatter' |
-                     input.tabs1 == 'Grouped - Hour' |
-                     input.tabs1 == 'Grouped - Activity'",
-        
-        uiOutput('select_no_groups'),
-        uiOutput('display_groups')
-        
-      ),
-      
-      # conditionalPanel(
-      #   condition = "input.tabs1 == 'Individual - Series' | 
-      #                input.tabs1 == 'Grouped - Series'",
-      #   
-      #   uiOutput("select_cumulative")
-      #   
-      # ),
-      
-      conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Series' | 
-                     input.tabs1 == 'Grouped - Series' | 
-                     input.tabs1 == 'Individual - Activity' |
-                     input.tabs1 == 'Grouped - Activity' |
-                     input.tabs1 == 'Individual - Hour' |
-                     input.tabs1 == 'Grouped - Hour'",
-        
-        uiOutput("display_points")
-        
-      ),
-      
-      conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Hour' |
-                     input.tabs1 == 'Grouped - Series' | 
-                     input.tabs1 == 'Grouped - Hour'",
-        
-        uiOutput("display_errorbars"),
-        # uiOutput("display_statistics")
-        
-      ),
-      
-      conditionalPanel(
-        condition = "input.tabs1 == 'Individual - Summary' | 
-                     input.tabs1 == 'Grouped - Summary'",
-        
+        condition = "input.tabs_main != 'Load Files' &
+                     input.tabs_main != 'Download' &
+                     input.tabs_main != 'Info'",
         uiOutput("download_view")
-        
       ),
-      
       conditionalPanel(
-        condition = "input.tabs1 != 'Download'",
-        
+        condition = "input.tabs_main == 'Time Series' |
+                     input.tabs_main == 'Circadian'",
+        uiOutput("display_point_markers")
+      ),
+      conditionalPanel(
+        condition = "input.tabs_main != 'Load Files' &
+                     input.tabs_main != 'Download' &
+                     input.tabs_main != 'Info'",
         tags$hr(),
         uiOutput("plot_width"),
         uiOutput("plot_height")
       ),
-      
       conditionalPanel(
-        condition = "input.tabs1 == 'Download'",      
-        p("Due to the rather computationally intensive calculations of all possible aggregations and their subsequent export xlsx format,
-         it is currently only possible to select 5 aggregation intervals."),
-        h4("The request take several seconds to process after clicking the download button")
+        condition = "input.tabs_main == 'Download'",
+        p("Due to the rather computationally intensive
+        calculations of all possible aggregations and their
+        subsequent export xlsx format, it is currently only
+          possible to select 5 aggregation intervals."),
+        h4("The request take several seconds to
+           process after clicking the download button")
       ),
-      width = 2
+      width = 3
     ),
     mainPanel(
       "",
-      
       tabsetPanel(
-        id = "tabs1",
-        type = "pills",
-        
-        tabPanel("Individual - Series",
-                 uiOutput("individual_series_plot_render")),
-        
-        tabPanel("Individual - Summary",
-                 uiOutput("individual_summary_plot_render")),
-        
-        tabPanel("Individual - Scatter",
-                 uiOutput("individual_scatter_plot_render")),
-        
-        # tabPanel("Individual - Activity",
-        #          uiOutput("individual_activity_plot_render")),
-        
-        tabPanel("Individual - Hour",
-                 uiOutput("individual_hour_plot_render")),
-        
-        tabPanel("Grouped - Series",
-                 uiOutput("grouped_series_plot_render")),
-        
-        tabPanel("Grouped - Summary",
-                 uiOutput("grouped_summary_plot_render")),
-        
-        tabPanel("Grouped - Scatter",
-                 uiOutput("grouped_scatter_plot_render")),
-        
-        # tabPanel("Grouped - Activity",
-        #          uiOutput("grouped_activity_plot_render")),
-        
-        tabPanel("Grouped - Hour",
-                 uiOutput("grouped_hour_plot_render")),
-        
-        tabPanel("Download", 
-                 uiOutput("download"))
-        
+        id = "tabs_main",
+        type = "tabs",
+        tabPanel(
+          "Load Files",
+          fluidRow(
+            br(),
+            column(
+              12,
+              fileInput("file", label = NULL)
+            )
+          ),
+          uiOutput("custom_file_specs"),
+          fluidRow(
+            column(
+              3,
+              actionButton("load_file",
+                "Load",
+                width = "100%",
+                class = "btn-primary"
+              )
+            )
+          ),
+          br(),
+          uiOutput("render_group_info"),
+          fluidRow(column(12, uiOutput("preview")))
+        ),
+        tabPanel(
+          "Summary",
+          uiOutput('render_summary_plot'),
+          #plotlyOutput("summary_plot"),
+          DT::DTOutput("summary_stat")
+        ),
+        tabPanel(
+          "Time Series",
+          uiOutput('render_series_plot'),
+          #plotlyOutput("series_plot"),
+          DT::DTOutput("series_stat")
+        ),
+        tabPanel(
+          "Scatterplot",
+            uiOutput('render_scatter_plot'),
+            #plotlyOutput("scatter_plot"),
+            h4("Correlation table"),
+            DT::DTOutput("correlations")
+        ),
+        tabPanel(
+          "Activity",
+          uiOutput('render_activity_plot'),
+          #plotlyOutput("activity_plot"),
+          DT::DTOutput("activity_table")
+        ),
+        tabPanel(
+          "Circadian",
+          uiOutput('render_circadian_plot'),
+          #plotlyOutput("circadian_plot"),
+          DT::DTOutput("circadian_stat")
+        ),
+        tabPanel(
+          "Download",
+          uiOutput("download")
+        ),
+        tabPanel(
+          "Info",
+          uiOutput("info")
+        )
       ),
-      width = 10
+      width = 9
     )
   )
 )
