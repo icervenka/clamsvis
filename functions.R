@@ -1,4 +1,58 @@
-# functions -----------------------------------------------
+### processing of uploaded file ------
+infer_file_type = function(file, parse_patterns) {
+  print("func::infer_file_type")
+  file_patterns = purrr::map(names(parse_patterns), function(x) {
+    parse_patterns[[x]][["file_pattern"]]
+  }) %>% setNames(names(parse_patterns))
+
+  found_pattern = purrr::map(names(file_patterns), function(x, file_lines) {
+    grepl(file_patterns[[x]], file_lines) %>% sum()
+  }, file_lines = readLines(file)) %>%
+    setNames(names(file_patterns))
+
+  found_pattern_bool = found_pattern > 0
+
+  # TODO I need to catch file type not recognized to display custom form later
+  if (sum(found_pattern_bool) == 1) {
+    return(which(found_pattern_bool) %>% names())
+  } else if (sum(found_pattern_bool) == 0) {
+    print("File type not recognized")
+    return("custom")
+  } else if (sum(found_pattern_bool) > 1) {
+    print("More than one type fits the criteria")
+    return(NULL)
+  } else {
+    print("Unknown error.")
+    return(NULL)
+  }
+}
+
+remove_empty_lines = function(file_lines) {
+  print("func::remove_empty_lines")
+  file_lines[nchar(file_lines) != 0]
+}
+
+parse_file = function(filepath, parse_pattern) {
+  print("func::parse_file")
+  file_lines = remove_empty_lines(readLines(filepath))
+
+  header_line = grep(parse_pattern$header_pattern, file_lines)[1]
+  data_start_line = header_line + parse_pattern$data_start_offset
+  data_end_line = ifelse(is.null(parse_pattern$data_end_pattern),
+    length(file_lines),
+    grep(parse_pattern$data_end_pattern, file_lines)[1] - 1
+  )
+
+  header = file_lines[header_line] %>% stringr::str_split("\\s*,\\s*", simplify = T)
+  df = purrr::map_dfr(file_lines[data_start_line:data_end_line], function(x) {
+    stringr::str_split(x, "\\s*,\\s*", simplify = T) %>%
+      as.data.frame(stringsAsFactors = F)
+  }) %>% setNames(header)
+  print("end_func::parse_file")
+  return(df)
+}
+
+
 find_interval = function(df, group_col, date_time_col, id_col) {
   date_time_df = df %>% pivot_wider(names_from = {{group_col}}, values_from = {{date_time_col}}, id_cols = {{id_col}})
   interval = map_dfr(date_time_df[-1], function(x) {diff(x %>% as_datetime) %>% as.integer}) #%>%
