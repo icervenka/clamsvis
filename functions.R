@@ -52,6 +52,83 @@ parse_file = function(filepath, parse_pattern) {
   return(df)
 }
 
+infer_date_time = function(column) {
+  print("func::infer_date_time")
+  lubridate::parse_date_time(column, orders = c("mdY T", "dmY T", "Ymd T", "Ydm T"))
+}
+
+infer_light = function(df, start, end) {
+  print("func::infer_light")
+  start = lubridate::hms(start)
+  end = lubridate::hms(end)
+  df$date_time = infer_date_time(df$date_time)
+  df = df %>%
+    dplyr::mutate(light = ifelse(hms::as_hms(date_time) >= start & hms::as_hms(date_time) < end, 1, 0))
+  print("end_func::infer_light")
+  return(df)
+}
+
+prettify_data = function(df, col_specs, type) {
+  print("func::prettify_data")
+  df = df %>%
+    dplyr::select(col_specs$colname[!is.na(col_specs$colname)]) %>%
+    setNames(col_specs %>%
+      dplyr::select(colname, app) %>%
+      tidyr::drop_na() %>%
+      dplyr::pull(app))
+
+  df = purrr::map_dfc(df, ~ type.convert(., as.is = TRUE))
+  df = df %>%
+    mutate(subject = as.character(subject))
+
+  # TODO fix the subject issue better
+  if (type == "clams") {
+    df = df %>%
+      dplyr::mutate(
+        xyt = xt + yt,
+        xf = xt - xa,
+        yf = yt - ya
+      ) %>%
+      dplyr::mutate(light = dplyr::case_when(
+        light == "ON" ~ 1,
+        light == "OFF" ~ 0,
+        TRUE ~ 0
+      )) %>%
+      dplyr::mutate(subject = dplyr::pull(., subject)[1])
+  }
+
+  if (type == "tse") {
+    df = df %>%
+      dplyr::mutate(date_time = paste0(Date, " ", Time)) %>%
+      dplyr::mutate(light = dplyr::case_when(
+        light > 30 ~ 1,
+        TRUE ~ 0
+      ))
+  }
+
+  df$date_time = infer_date_time(df$date_time)
+  df = df %>%
+    dplyr::select(col_specs$app[!is.na(col_specs$app)])
+  print("end_func::prettify_data")
+  return(as.data.frame(df))
+}
+
+### processing of parameter selection ------
+validate_param_df = function(parameter_df) {
+  print("func::validate_param_df")
+  if (anyDuplicated(parameter_df$select) > 0) {
+    print("Duplicated parameters selected.")
+    return(FALSE)
+  } else if (anyDuplicated(parameter_df$select) > 0) {
+    print("Duplicated parameter display names.")
+    return(FALSE)
+  } else {
+    return(TRUE)
+  }
+}
+
+
+
 
 find_interval = function(df, group_col, date_time_col, id_col) {
   date_time_df = df %>% pivot_wider(names_from = {{group_col}}, values_from = {{date_time_col}}, id_cols = {{id_col}})
