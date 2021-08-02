@@ -130,20 +130,51 @@ validate_param_df = function(parameter_df) {
 
 
 
-find_interval = function(df, group_col, date_time_col, id_col) {
-  date_time_df = df %>% pivot_wider(names_from = {{group_col}}, values_from = {{date_time_col}}, id_cols = {{id_col}})
-  interval = map_dfr(date_time_df[-1], function(x) {diff(x %>% as_datetime) %>% as.integer}) #%>%
-  #pivot_longer(everything(), names_to = "subject", values_to = "interval") %>%
-  #dplyr::select(interval) #%>%
-  # unique %>%
-  # pull
-  return(interval)
+### time aggregation of data ------
+recursive_divisors = function(v) {
+  print(v)
+  if (length(v) == 1) {
+    return(numbers::divisors(v))
+  }
+  else if (length(v) == 2) {
+    return(intersect(numbers::divisors(v[2]), numbers::divisors(v[1])))
+  } else {
+    return(intersect(rec_intersect(v[2:length(v)]), numbers::divisors(v[1])))
+  }
+}
+
+get_valid_time_agg = function(freq, phase_durations) {
+  print("func::get_valid_time_agg")
+  phase_intersect = recursive_divisors(phase_durations)
+  values = intersect(
+    seq(freq, 24 * 60, by = freq),
+    c(phase_intersect, 1440)
+  )
+  repeats = values / freq
+  print("end_func::get_valid_time_agg")
+  return(list("values" = values, "repeats" = repeats))
 }
 
 create_aggregation_vector = function(each, length) {
+  print("func::create_aggregation_vector")
   vec = c(rep(1:length, each = each, length.out = length))
+  print("end_func::create_aggregation_vector")
   return(vec)
 }
+
+create_aggregation_df = function(phase_durations, frequency, l) {
+  print("func::create_aggregation_df")
+  time_agg = get_valid_time_agg(frequency, phase_durations)
+  v = purrr::map_dfc(time_agg$repeats,
+    .f = create_aggregation_vector,
+    l
+  ) %>%
+    setNames(paste0("t", time_agg$values))
+  print("end_func::create_aggregation_df")
+  return(v)
+}
+
+
 
 aggregate_parameter = function(data, time, param) {
   func = aggregate_by(param)
