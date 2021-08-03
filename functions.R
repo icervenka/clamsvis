@@ -127,6 +127,29 @@ validate_param_df = function(parameter_df) {
   }
 }
 
+### find measurement frequences in the data ------
+find_frequencies = function(df, subject_col, date_time_col) {
+  print("func::find_frequencies")
+  date_time_df = df %>%
+    dplyr::group_by({{ subject_col }}) %>%
+    dplyr::mutate(frequency = dplyr::row_number()) %>%
+    tidyr::pivot_wider(
+      names_from = {{ subject_col }},
+      values_from = {{ date_time_col }},
+      id_cols = frequency
+    )
+  frequencies = purrr::map_dfr(date_time_df[-1], function(x) {
+    diff(x) %>% as.integer()
+  }) %>%
+    tidyr::pivot_longer(everything(),
+      names_to = "subject",
+      values_to = "frequency"
+    ) %>%
+    dplyr::pull(frequency) %>%
+    unique()
+  print("end_func::find_frequencies")
+  return(frequencies)
+}
 
 
 
