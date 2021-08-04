@@ -197,18 +197,51 @@ create_aggregation_df = function(phase_durations, frequency, l) {
   return(v)
 }
 
+aggregate_with_specs = function(param_df) {
+  function(select_param) {
+    by = param_df %>% dplyr::filter(app == select_param) %>% dplyr::select(aggregate) %>% as.character
+    if(by == "first"){
+      return(getFromNamespace("first", "dplyr"))
+    } else {
+      return(get(by))
+    }
+  }
+}
 
-
-aggregate_parameter = function(data, time, param) {
-  func = aggregate_by(param)
-  data = setDT(data)[,.(light = data.table::first(light),
-                 date_time = data.table::first(date_time),
-                 mean = func(get(param)),
-                 param = param),
-              by = .(subject, interval = get(time))]
-  data[,period := cumsum(c(1,diff(light)!=0)), by = subject]
+aggregate_parameter = function(data, time, param, by) {
+  print("func::aggregate_parameter")
+  data = data.table::setDT(data)[, .(
+    light = data.table::first(light),
+    period = data.table::first(period),
+    date_time = data.table::first(date_time),
+    mean = by(get(param)),
+    param = param
+  ),
+  by = .(subject, interval = get(time))
+  ]
+  data[, `:=`(cumsum = cumsum(mean)), by = .(subject, param)]
+  print("end_func::aggregate_parameter")
   return(data)
 }
+
+aggregate_selected_params = function(data, time, params, param_df) {
+  print("func::aggregate_selected_params")
+
+  tdf = purrr::map_dfr(
+    params,
+    ~ aggregate_parameter(
+      data,
+      paste0("t", time),
+      .x,
+      aggregate_with_specs(param_df)(.x)
+    )
+  )
+  tdf$param = factor(tdf$param, levels = unique(tdf$param))
+  print("end_func::aggregate_selected_params")
+  return(tdf)
+}
+
+
 
 parse_group_inputs = function(inp) {
   no_groups = 1
