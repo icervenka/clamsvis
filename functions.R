@@ -151,8 +151,6 @@ find_frequencies = function(df, subject_col, date_time_col) {
   return(frequencies)
 }
 
-
-
 ### time aggregation of data ------
 recursive_divisors = function(v) {
   print(v)
@@ -241,6 +239,32 @@ aggregate_selected_params = function(data, time, params, param_df) {
   return(tdf)
 }
 
+# input based data filtering functions ------
+filter_subjects = function(df, subjects) {
+  print("func::filter_subjects")
+  df %>%
+    dplyr::filter(subject %in% subjects)
+}
+
+filter_intervals = function(df, minval, maxval) {
+  print("func::filter_intervals")
+  df %>%
+    dplyr::filter(interval >= minval) %>%
+    dplyr::filter(interval <= maxval)
+}
+
+filter_periods = function(df, periods) {
+  print("func::filter_periods")
+  if(is.null(periods)) {
+    d = data.frame(matrix(nrow=0, ncol = length(names(df)))) %>%
+      setNames(names(df))
+    print(d)
+    return(d)
+  } else {
+    df %>% dplyr::filter(period %in% periods)
+  }
+
+}
 
 
 parse_group_inputs = function(inp) {
