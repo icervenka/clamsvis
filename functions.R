@@ -346,3 +346,61 @@ summarise_groups = function(df) {
   print("end_func::summarise_groups")
   return(df)
 }
+
+
+
+get_dark_interval_ycoord = function(data, plot_y) {
+  if(!("sd" %in% names(data))) {
+    data$sd = 0
+  }
+  data %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(sd_mean_max = sum(!!as.symbol(plot_y), sd, na.rm = T),
+                  sd_mean_min = sum(!!as.symbol(plot_y), -1*sd, na.rm = T)) %>%
+    dplyr::group_by(param) %>%
+    dplyr::summarise(
+      ymin = min(sd_mean_min),
+      ymax = max(sd_mean_max),
+      .groups = "drop") %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(
+    ymin = ymin - 0.03 * (ymax - ymin),
+    ymax = ymax + 0.03 * (ymax - ymin)
+  )
+}
+
+get_dark_interval_rect = function(data, grp, plot_y, shift_by = 0) {
+  print("func::get_dark_interval_rect")
+
+  min_interval = min(data$interval)
+  max_interval = max(data$interval)
+
+  df = data %>%
+    filter(!!as.symbol(grp) == dplyr::first(!!as.symbol(grp))) %>%
+    dplyr::group_by(light, period, param) %>%
+    summarise(lengths = rle(light)$lengths, .groups = "drop") %>%
+    arrange(param, period) %>%
+    group_by(param) %>%
+    mutate(xmax = (cumsum(lengths) + shift_by) + min_interval) %>%
+    mutate(xmin = (xmax - lengths)) %>%
+    dplyr::left_join(get_dark_interval_ycoord(data, plot_y), by = "param") %>%
+    dplyr::filter(light == 0) %>%
+    dplyr::filter(xmax > min_interval,
+                  xmin <= max_interval)
+  return(df)
+}
+
+get_circadian_dark_interval_rect = function(data, grp, plot_y, shift_by = 0) {
+  print("func::get_circadian_dark_interval_rect")
+  df = data %>%
+    filter(!!as.symbol(grp) == dplyr::first(!!as.symbol(grp))) %>%
+    dplyr::group_by(light, param) %>%
+    summarise(lengths = rle(light)$lengths, .groups = "drop") %>%
+    arrange(param) %>%
+    group_by(param) %>%
+    mutate(xmax = (cumsum(lengths) + shift_by)) %>%
+    mutate(xmin = (xmax - lengths)) %>%
+    dplyr::left_join(get_dark_interval_ycoord(data, plot_y), by = "param") %>%
+    dplyr::filter(light == 0)
+  return(df)
+}
