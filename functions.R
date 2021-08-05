@@ -267,85 +267,82 @@ filter_periods = function(df, periods) {
 }
 
 
-parse_group_inputs = function(inp) {
-  no_groups = 1
-  if(!is.null(inp$select_no_groups)) {
-    no_groups = inp$select_no_groups
-  }
-
-  group_list = lapply(1:as.integer(no_groups), function(x) {
-    inp[[paste0("group_no_", x)]]
+# group related functions ------
+parse_group_inputs = function(input, counter) {
+  print("func::parse_group_inputs")
+  group_list = purrr::map(1:counter, function(x) {
+    input[[paste0("group_no_", x)]]
   })
 
-  group_list[sapply(group_list, is.null)] <- list("")
-  group_list <- group_list[group_list != ""]
+  group_list = group_list %>% purrr::discard(is.null)
 
-  group_list <- rapply(lapply(group_list, strsplit, ","), str_trim, how = "list") %>%
-    lapply(unlist)
-
-  if(length(group_list) > 0) {
-    group_df = map_dfr(1:length(group_list), function(x) {
-      cbind.data.frame(subject = group_list[[x]], group =  paste0("Group", x), stringsAsFactors = FALSE)
+  if (length(group_list) > 0) {
+    group_df = purrr::map_dfr(1:length(group_list), function(x) {
+      cbind.data.frame(
+        subject = group_list[[x]],
+        group = input[[paste0("group_name_", x)]],
+        stringsAsFactors = FALSE
+      ) %>%
+        dplyr::mutate(group = ifelse(group == "", paste0("Group", x), group))
     })
   } else {
-    group_df = data.frame()
+    group_df = data.frame(subject = character(0),
+                          group = character(0),
+                          stringsAsFactors = FALSE)
   }
-
+  print("end_func::parse_group_inputs")
+  print(group_df)
   return(group_df)
 }
 
-# min.mean.sd.max <- function(x) {
-#   r <- c(min(x), mean(x) - sd(x), mean(x), mean(x) + sd(x), max(x))
-#   names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
-#   r
-# }
-#
-# mean.sd <- function(x) {
-#   r <- c(mean(x) - sd(x), mean(x), mean(x) + sd(x))
-#   names(r) <- c("ymin", "y", "ymax")
-#   r
-# }
-
-
-aggregate_with_specs = function(specs) {
-  function(select_param) {
-    by = specs %>% dplyr::filter(name_app == select_param) %>% dplyr::select(aggregate) %>% as.character
-    return(get(by))
-  }
+parse_group_file = function(input) {
+  group_df = readr::read_csv(input$metadata$datapath,
+                             col_types = readr::cols(.default = "c"))
+  group_df = group_df %>%
+    dplyr::select(subject, group = matches(paste(input$metadata_group_col)))
+  print(group_df)
+  return(group_df)
 }
 
+add_groups = function(data_df, group_df) {
+  print("func::add_groups")
+  if (dim(group_df)[1] == 0) {
+    group_df = data_df %>%
+      dplyr::select(subject) %>%
+      unique() %>%
+      dplyr::mutate(
+        group = subject
+      )
+  }
+  df = data_df %>%
+    dplyr::left_join(group_df, by = "subject") %>%
+    dplyr::mutate(group = as.character(group))
+  print("end_func::add_groups")
+  return(df)
+}
 
-# additional ploting options ---------------------------------
-# TODO add geom_tile
-
-plot_points = function(condition_field, aes_colour = subject) {
-  if("1" %in% condition_field) {
-    geom_point(aes(colour = {{ aes_colour }} ), size = 0.75)
+summarise_groups_bool = function(df, grouped, filter = F, subjects = NULL) {
+  print("func::summarise_groups_bool")
+  if(grouped == "group") {
+    df %>% summarise_groups()
   } else {
-    geom_blank()
+    if(filter == T) {
+      df %>% filter_subjects(subjects)
+    } else {
+      df
+    }
   }
 }
 
-plot_errorbars = function(condition_field, aes_fill = group) {
-  if(condition_field == "2") {
-    geom_ribbon(aes(ymin=mean-sd, ymax=mean+sd, fill = {{ aes_fill }}), alpha = 0.08)
-  } else {
-    geom_blank()
-  }
+summarise_groups = function(df) {
+  print("func::summarise_groups")
+  df = df %>%
+    dplyr::group_by(across(c(-subject, -date_time, -mean))) %>%
+    dplyr::summarise(sd = sd(mean, na.rm = T),
+                     mean = mean(mean, na.rm = T),
+                     .groups = "drop") %>%
+    dplyr::group_by(group, param) %>%
+    dplyr::mutate(cumsum = cumsum(mean))
+  print("end_func::summarise_groups")
+  return(df)
 }
-
-plot_facets = function(n, formula = "param ~ ." ) {
-  if(n > 1) {
-    facet_grid(as.formula(formula) ,scales = "free_y", labeller = label_both)
-  } else {
-    geom_blank()
-  }
-}
-
-# plot_jitter = function(condition_field) {
-#   if("1" %in% condition_field) {
-#     geom_jitter(shape = 21, colour = "grey50", fill = "white", size = 1, stroke = 0.25, width = 0.25)
-#   } else {
-#     geom_blank()
-#   }
-# }
