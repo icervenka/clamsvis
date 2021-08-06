@@ -405,6 +405,27 @@ get_circadian_dark_interval_rect = function(data, grp, plot_y, shift_by = 0) {
   return(df)
 }
 
+plot_activity_boxjitter = function(data, plot_x, plot_y, time_agg, ...) {
+  data %>%
+    #ungroup() %>%
+    mutate(shift_jitter = as.numeric(as.factor(!!as.symbol(plot_x))) - 0.35) %>%
+    ggplot() +
+    geom_boxplot(aes(x = !!as.symbol(plot_x),
+                     y = !!as.symbol(plot_y) * as.numeric(time_agg),
+                     fill = !!as.symbol(plot_x)),
+                 outlier.shape = NA,
+                 size = 0.5) +
+    geom_jitter(aes(x = shift_jitter,
+                    y = !!as.symbol(plot_y) * as.numeric(time_agg),
+                    colour = !!as.symbol(plot_x),
+                    text = !!as.symbol(plot_y) * as.numeric(time_agg)),
+                alpha = 0.7,
+                width = 0.05) +
+    facet_wrap(~ activity_value, nrow = 1) +
+    theme_minimal() +
+    theme(legend.position = "none")
+}
+
 plot_points = function(condition_field, aes_colour) {
   if ("1" %in% condition_field) {
     geom_point(aes_string(color = aes_colour), size = 0.75)
