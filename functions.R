@@ -404,3 +404,50 @@ get_circadian_dark_interval_rect = function(data, grp, plot_y, shift_by = 0) {
     dplyr::filter(light == 0)
   return(df)
 }
+
+plot_points = function(condition_field, aes_colour) {
+  if ("1" %in% condition_field) {
+    geom_point(aes_string(color = aes_colour), size = 0.75)
+  } else {
+    geom_blank()
+  }
+}
+
+plot_errorbars = function(condition_field, aes_fill) {
+  if ("1" %in% condition_field) {
+    geom_ribbon(aes(ymin = mean - sd, ymax = mean + sd, fill = !!as.symbol(aes_fill)), alpha = 0.08)
+  } else {
+    geom_blank()
+  }
+}
+
+plot_facets = function(data, formula = "param ~ .") {
+  if (length(data$param %>% unique()) > 1) {
+    facet_grid(as.formula(formula), scales = "free_y", labeller = label_both)
+  } else {
+    geom_blank()
+  }
+}
+
+# TODO test for multiple subjects
+plot_lm = function(condition_field) {
+  if ("1" %in% condition_field) {
+    geom_smooth(method = 'lm')
+  } else {
+    geom_blank()
+  }
+}
+
+plot_dark_interval_rect = function(data) {
+  if(dim(data)[1] > 0) {
+    geom_rect(
+      data = data,
+      mapping = aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+      fill = "grey70",
+      alpha = 0.2,
+      inherit.aes = F
+    )
+  } else {
+    geom_blank()
+  }
+}
