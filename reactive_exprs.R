@@ -1,19 +1,123 @@
-observeEvent(input$add_btn, {
-  if(rv_filters$counter < 6) rv_filters$counter <- rv_filters$counter + 1
+# add/remove counters ----------------------------------------------------------
+# TODO maybe change into modules
+
+# add/remove input params
+observeEvent(input$add_param_input_btn, {
+  if (rv_counters$param_input < 20) {
+    rv_counters$param_input = rv_counters$param_input + 1
+  }
 })
 
-observeEvent(input$rm_btn, {
-  if(rv_filters$counter > 1) rv_filters$counter <- rv_filters$counter - 1
+observeEvent(input$rm_param_input_btn, {
+  if (rv_counters$param_input > 1) {
+    rv_counters$param_input = rv_counters$param_input - 1
+  }
 })
+
+# add/remove groups
+observeEvent(input$add_group_btn, {
+  if (rv_counters$group < 12) {
+    rv_counters$group = rv_counters$group + 1
+  }
+})
+
+observeEvent(input$rm_group_btn, {
+  if (rv_counters$group > 2) {
+    rv_counters$group = rv_counters$group - 1
+  }
+})
+
+# add/remove select params
+observeEvent(input$add_param_select_btn, {
+  if (rv_counters$param_select < 6) {
+    rv_counters$param_select = rv_counters$param_select + 1
+  }
+})
+
+observeEvent(input$rm_param_select_btn, {
+  if (rv_counters$param_select > 1) {
+    rv_counters$param_select = rv_counters$param_select - 1
+  }
+})
+
+observe({
+  print("reactive::file_rvinterval")
+  rv$low_interval = input$display_interval[1]
+  rv$high_interval = input$display_interval[2]
+}, priority = 1)
+
+observe(
+  {
+    print("reactive::rvparams")
+     selected_params = purrr::map(1:rv_counters$param_select, function(x) {
+      input[[paste0("select_parameter_", x)]]
+    }) %>%
+      purrr::discard(is.null) %>%
+      unlist(recursive = TRUE) %>%
+      unique()
+
+     if(is.null(selected_params)) {
+       rv$selected_params = get_parameters()[1]
+     } else {
+       rv$selected_params = selected_params
+     }
+
+  },
+  priority = 1
+)
+
+observe(
+  {
+    print("reactive::rvselect_aggregation")
+    if(is.null(input$select_aggregation)) {
+      rv$selected_aggregation = "60"
+    } else {
+      rv$selected_aggregation = input$select_aggregation
+    }
+  },
+  priority = 1
+)
+
+observe(
+  {
+    print("reactive::rv_subjects")
+    rv$selected_subjects = input$select_subjects %>%
+      purrr::discard(is.null) %>%
+      unique()
+  },
+  priority = 1
+)
+
+observe(
+  {
+    print("reactive::rvselect_interval")
+    if(is.null(input$display_interval[1])) {
+      rv$selected_interval_low = 1
+    } else {
+      rv$selected_interval_low = input$display_interval[1]
+    }
+
+    if(is.null(input$display_interval[2])) {
+      rv$selected_interval_high = get_max_interval()
+    } else {
+      rv$selected_interval_high = input$display_interval[2]
+    }
+
+  },
+  priority = 1
+)
+
+
+
 
 select_parameters = observe({
   print("parameters_running")
   num_parameters = rv_filters$counter
-  selected_parameters = lapply(1:num_parameters, function(x) {input[[paste0("select_parameter_", x)]]}) %>% 
+  selected_parameters = lapply(1:num_parameters, function(x) {input[[paste0("select_parameter_", x)]]}) %>%
     unlist(recursive = TRUE) %>%
     unique
   rv_filters$parameters = selected_parameters
-  
+
 })
 
 update_aggregated_filters = function(df) {
@@ -23,9 +127,9 @@ update_aggregated_filters = function(df) {
 }
 
 map_aggregate= function(params, data, time) {
-  df = map_dfr(params, 
-          ~ aggregate_parameter(data, 
-                                paste0("t", time), 
+  df = map_dfr(params,
+          ~ aggregate_parameter(data,
+                                paste0("t", time),
                                 .x))
   df$param = factor(df$param, levels = unique(df$param))
   return(df)
@@ -66,9 +170,9 @@ add_groups = function(df) {
   if(dim(rv_data$group_df)[1] > 0) {
     print("groups_running")
     ag = merge(df, rv_data$group_df, by = "subject")
-    
+
     ag =  ag %>%
-      group_by_at(vars(-subject, -date_time, -mean)) %>% 
+      group_by_at(vars(-subject, -date_time, -mean)) %>%
       summarise(sd = sd(mean), mean = mean(mean))
     print(ag)
   }
@@ -90,6 +194,6 @@ filter_periods = function(df, periods) {
 
 render_plot = function(out_plot) {
   plotlyOutput(out_plot) #,
-               # height = input$plot_height * rv_options$height_multiplier, 
+               # height = input$plot_height * rv_options$height_multiplier,
                # width = input$plot_width)
 }
