@@ -472,3 +472,49 @@ plot_dark_interval_rect = function(data) {
     geom_blank()
   }
 }
+
+calculate_correlations = function(data, grp, x, y) {
+  print("func::calculate_correlations")
+  data %>%
+    dplyr::group_by(!!as.symbol(grp), light) %>%
+    dplyr::summarise(cor.test(!!as.symbol(x), !!as.symbol(y)) %>% broom::tidy(), .groups = "drop")
+}
+
+calculate_pvals = function(df, grouping_cols) {
+  print("func::calculate_pvals")
+  if(length(df$group %>% unique) > 1) {
+    df = df %>%
+      data.frame(stringsAsFactors = F) %>%
+      tidyr::nest(nested = !{{grouping_cols}}) %>%
+      dplyr::mutate(stat = purrr::map(nested, function(x) {
+        pairwise.t.test(x$mean, x$group, p.adjust.method = "none") # %>%
+          broom::tidy()
+      })) %>%
+  tidyr::unnest(cols = stat) %>%
+  dplyr::mutate(padj = p.adjust(p.value, method = "BH")) %>%
+  dplyr::select(param, light, group1, group2, pval = p.value, padj)
+  } else {
+    data.frame()
+  }
+}
+
+calculate_activity_summary = function(data, grp) {
+  print("func::calculate_activity_summary")
+  activity_summary = data %>%
+    dplyr::group_by(!!as.symbol(grp), param) %>%
+    dplyr::summarise(
+      activity_length = rle(activity)$lengths,
+      activity_value = rle(activity)$values,
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(id = dplyr::row_number())
+
+  activity_totals = data %>%
+    dplyr::mutate(id = rep(activity_summary$id, activity_summary$activity_length)) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise(sum = sum(mean), .groups = "drop")
+
+  activity_summary = activity_summary %>%
+    dplyr::left_join(activity_totals, by = "id")
+  return(activity_summary)
+}
