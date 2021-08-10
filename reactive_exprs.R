@@ -40,6 +40,16 @@ observeEvent(input$rm_param_select_btn, {
   }
 })
 
+observeEvent(input$file, {
+  print("reactive::file_upload_valid_1")
+  rv$file_upload_valid = 0
+})
+
+observeEvent(input$load_file, {
+  print("reactive::file_upload_valid_2")
+  rv$file_upload_valid = 1
+})
+
 observe({
   print("reactive::file_rvinterval")
   rv$low_interval = input$display_interval[1]
@@ -107,6 +117,25 @@ observe(
   priority = 1
 )
 
+get_metadata_header = eventReactive(
+  {
+    input$metadata
+  },
+  {
+    print("reactive::get_metadata_header")
+    meta = readr::read_csv(input$metadata$datapath, col_types = readr::cols(.default = "c"))
+    return(names(meta)[!(names(meta) == "subject")])
+  })
+
+observeEvent(input$update_groups_input, {
+  rv$update_groups_input_toggle = 1
+  rv$update_groups_file_toggle = 0
+})
+
+observeEvent(input$update_groups_file, {
+  rv$update_groups_input_toggle = 0
+  rv$update_groups_file_toggle = 1
+})
 
 
 
