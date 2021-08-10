@@ -137,6 +137,104 @@ observeEvent(input$update_groups_file, {
   rv$update_groups_file_toggle = 1
 })
 
+# observe(
+#   {
+#     print("reactive::rvselect_periods")
+#     if(is.null(input$select_dark)) {
+#       rv$selected_periods_dark = NULL #get_dark_periods()
+#     } else {
+#       rv$selected_periods_dark = input$select_dark
+#     }
+#
+#     if(is.null(input$select_light)) {
+#       rv$selected_periods_light = NULL #get_light_periods()
+#     } else {
+#       rv$selected_periods_light = input$select_light
+#     }
+#   },
+#   priority = 1
+# )
+
+file_type = eventReactive(input$file,
+  {
+    print("reactive::file_type")
+    infer_file_type(input$file$datapath, parse_patterns)
+  },
+  ignoreNULL = T
+)
+
+# processsing of uploaded file ----
+custom_colnames = eventReactive(
+  {
+    input$file
+  },
+  {
+    print("reactive::custom_colnames")
+    if (file_type() == "custom") {
+      names(read.csv(input$file$datapath))
+    }
+})
+
+# # light phase start/end changes
+# rv_light = reactiveValues(
+#   input_start = strptime("06:00:00", "%T"),
+#   input_end = strptime("18:00:00", "%T")
+# )
+#
+# observeEvent(
+#   {
+#     input$light_start
+#     input$light_end
+#   },
+#   {
+#     rv_light$input_start = input$light_start
+#     rv_light$input_end = input$light_end
+#   }
+# )
+
+# create parameter dataframe  ----
+create_param_df = eventReactive(input$load_file, {
+  print("reactive::create_param_df")
+  if (file_type() == "custom") {
+    required = data.frame(
+      colname = c(
+        input[["subject"]],
+        input[["date_time"]],
+        ifelse(input[["light"]] == "infer", "light", input[["light"]])
+      ),
+      display = c("Subject", "Date-Time", "Light"),
+      app = c("subject", "date_time", "light"),
+      required = 1,
+      aggregate = c(NA, "first", "first"),
+      bout = c(FALSE, FALSE, FALSE),
+      stringsAsFactors = F
+    )
+
+    optional = purrr::map_dfr(1:rv_counters$param_input, function(x) {
+      data.frame(
+        colname = input[[paste0("parameter_id_", x)]],
+        display = ifelse(nchar(input[[paste0("parameter_name_", x)]]) == 0,
+          input[[paste0("parameter_id_", x)]],
+          input[[paste0("parameter_name_", x)]]
+        ),
+        app = input[[paste0("parameter_id_", x)]],
+        required = 0,
+        aggregate = input[[paste0("parameter_agg_", x)]],
+        bout = input[[paste0("parameter_bout_", x)]],
+        stringsAsFactors = F
+      )
+    })
+
+    param_df = rbind.data.frame(required, optional)
+  } else if (!is.null(file_type())) {
+    param_df = read.table(paste0(file_type(), "_colspecs.txt"), sep = "\t", header = T)
+  }
+  return(param_df)
+})
+
+# observe({
+#   create_param_df() %>% validate_param_df()
+# })
 
 
 select_parameters = observe({
