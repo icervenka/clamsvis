@@ -236,6 +236,56 @@ create_param_df = eventReactive(input$load_file, {
 #   create_param_df() %>% validate_param_df()
 # })
 
+# reactive getters ------
+get_subjects = eventReactive(read_data(), {
+  print("reactive::get_subjects")
+  return(read_data()$subject %>% unique())
+})
+
+get_groups = reactive({
+    print("reactive::getgroups")
+    print(rv$update_groups_input_toggle)
+    print(rv$update_groups_file_toggle)
+    if(rv$update_groups_input_toggle == 1) {
+      group_df = parse_group_inputs(input, rv_counters$group)
+    } else if(rv$update_groups_file_toggle == 1) {
+      group_df = parse_group_file(input)
+    }
+    print(group_df)
+    return(group_df)
+  })
+
+get_parameters = eventReactive({
+    phase_align()
+    create_param_df()
+  }, {
+    print("reactive::get_parameters")
+    nms = names(phase_align())
+    nms = nms[!(nms %in% c("subject", "date_time", "light", "interval", "period"))]
+    vals = create_param_df() %>%
+      dplyr::filter(app %in% nms)
+    p = vals$app
+    names(p) = vals$display
+    return(p)
+  })
+
+get_max_interval = eventReactive(
+  {
+    get_data_agg_combined()
+    rv$selected_aggregation
+    get_parameters()
+  },
+  {
+  print("reactive::get_max_interval")
+  ag = aggregate_selected_params(
+    get_data_agg_combined(),
+    rv$selected_aggregation,
+    rv$selected_params,
+    create_param_df()) %>%
+    dplyr::pull(interval) %>%
+    max()
+  return(ag)
+})
 
 select_parameters = observe({
   print("parameters_running")
