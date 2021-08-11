@@ -287,6 +287,48 @@ get_max_interval = eventReactive(
   return(ag)
 })
 
+get_dark_periods = eventReactive(phase_align(), {
+  print("reactive::get_dark_periods")
+  phase_align() %>%
+    dplyr::filter(light == 0) %>%
+    dplyr::pull(period) %>%
+    unique()
+})
+
+get_light_periods = eventReactive(phase_align(), {
+  print("reactive::get_light_periods")
+  phase_align() %>%
+    dplyr::filter(light == 1) %>%
+    dplyr::pull(period) %>%
+    unique()
+})
+
+get_phase_durations = eventReactive(
+  {
+    phase_align()
+    rv$global_frequency
+  },
+  {
+    print("reactive::get_phase_durations")
+    phase_align() %>%
+      dplyr::filter(period != max((.) %>% dplyr::pull(period))) %>%
+      dplyr::group_by(subject, period) %>%
+      dplyr::summarise(duration = dplyr::n() * rv$global_frequency, .groups = "drop") %>%
+      dplyr::pull(duration) %>%
+      unique()
+  }
+)
+
+valid_freq = eventReactive(
+  {
+    rv$global_frequency
+    get_phase_durations()
+  },
+  {
+    print("reactive::valid_freq")
+    return(get_valid_time_agg(rv$global_frequency, get_phase_durations())$values)
+})
+
 select_parameters = observe({
   print("parameters_running")
   num_parameters = rv_filters$counter
