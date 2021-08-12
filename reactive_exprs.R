@@ -359,6 +359,91 @@ phase_align = eventReactive(read_data(), {
     dplyr::mutate(period = cumsum(c(1, diff(light) != 0)))
 })
 
+aggregate_summary = reactive(
+  # {
+  #   rv$selected_params
+  #   get_data_agg_combined()
+  #   input$select_aggregation
+  #   input$individual_grouped_select
+  #   input$select_dark
+  #   input$select_light
+  #   get_groups()
+  # },
+  {
+    print("reactive::aggregate_summary")
+    aggregated_df = aggregate_selected_params(
+      get_data_agg_combined(),
+      rv$selected_aggregation,
+      rv$selected_params,
+      create_param_df()
+    ) %>%
+      add_groups(get_groups()) %>%
+      summarise_groups_bool(input$individual_grouped_select) %>%
+      filter_periods(c(input$select_dark, input$select_light))
+    return(aggregated_df)
+  }
+)
+
+aggregate_series = reactive(
+  # {
+  #   rv$selected_params
+  #   rv$selected_subjects
+  #   get_data_agg_combined()
+  #   input$select_aggregation
+  #   input$individual_grouped_select
+  #   input$display_interval[1]
+  #   input$display_interval[2]
+  #   get_max_interval()
+  #   get_groups()
+  #   # req(isTruthy(input$A) | isTruthy(input$B))
+  # },
+  {
+    print("reactive::aggregate_series")
+    aggregated_df = aggregate_selected_params(
+      get_data_agg_combined(),
+      rv$selected_aggregation,
+      rv$selected_params,
+      create_param_df()
+    ) %>%
+      add_groups(get_groups()) %>%
+      summarise_groups_bool(input$individual_grouped_select,
+                            filter = T,
+                            input$select_subjects) %>%
+      filter_intervals(rv$selected_interval_low, rv$selected_interval_high)
+    return(aggregated_df)
+  }
+)
+
+aggregate_scatter = reactive(
+  # {
+  #   get_parameters()
+  #   get_data_agg_combined()
+  #   input$select_aggregation
+  # },
+  {
+    print("reactive::aggregate_scatter")
+    aggregated_df = aggregate_selected_params(
+      get_data_agg_combined(),
+      rv$selected_aggregation,
+      get_parameters(),
+      create_param_df()
+    ) %>%
+      add_groups(get_groups()) %>%
+      summarise_groups_bool(input$individual_grouped_select,
+                            filter = T,
+                            rv$selected_subjects) %>%
+      filter_periods(c(input$select_dark, input$select_light)) %>%
+      tidyr::pivot_wider(
+        id_cols = c(input$individual_grouped_select, interval, light, period),
+        names_from = param,
+        values_from = mean
+      )
+    return(aggregated_df)
+  }
+)
+
+
+
 select_parameters = observe({
   print("parameters_running")
   num_parameters = rv_filters$counter
