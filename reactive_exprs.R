@@ -442,6 +442,96 @@ aggregate_scatter = reactive(
   }
 )
 
+aggregate_activity = reactive(
+  # {
+  #   rv$selected_params
+  #   get_data_agg_combined()
+  #   input$activity_aggregation
+  #   input$activity_mincount
+  # },
+  {
+    print("reactive::aggregate_activity")
+    print(input$activity_mincount)
+
+    aggregated_df = aggregate_selected_params(
+      get_data_agg_combined(),
+      input$activity_aggregation,
+      input$select_activity_parameter,
+      create_param_df()
+    ) %>%
+      dplyr::mutate(activity = dplyr::case_when(
+        mean < input$activity_mincount ~ "inactive",
+        mean >= input$activity_mincount ~ "active"
+      )) %>%
+      add_groups(get_groups()) %>%
+      summarise_groups_bool(input$individual_grouped_select,
+                            filter = T,
+                            rv$selected_subjects) %>%
+      calculate_activity_summary(input$individual_grouped_select)
+    return(aggregated_df)
+  }
+)
+
+aggregate_circadian = reactive(
+  # {
+  #   rv$selected_params
+  #   get_data_agg_combined()
+  #   input$select_aggregation
+  #   input$shift_zt
+  # },
+  {
+    print("reactive::aggregate_aggregate_circadian")
+    aggregated_df = aggregate_selected_params(
+      get_data_agg_combined(),
+      "60",
+      rv$selected_params,
+      create_param_df()
+    ) %>%
+      dplyr::mutate(hour = lubridate::hour(lubridate::ymd_hms(date_time))) %>%
+      dplyr::mutate(hour = (hour + input$shift_zt) %% 24) %>%
+      add_groups(get_groups()) %>%
+      summarise_groups_bool(input$individual_grouped_select,
+                            filter = T,
+                            rv$selected_subjects) %>%
+      filter_periods(c(input$select_dark, input$select_light)) %>%
+      dplyr::group_by(hour,
+                      !!as.symbol(input$individual_grouped_select),
+                      param) %>%
+      dplyr::summarise(
+        sd = sd(mean),
+        mean = mean(mean),
+        light = dplyr::first(light),
+        .groups = "drop"
+      )
+    return(aggregated_df)
+  }
+)
+
+aggregate_circadian_table = reactive(
+  # {
+  #   rv$selected_params
+  #   get_data_agg_combined()
+  #   input$select_aggregation
+  #   input$shift_zt
+  # },
+  {
+    print("reactive::aggregate_aggregate_circadian_table")
+    aggregated_df = aggregate_selected_params(
+      get_data_agg_combined(),
+      "60",
+      rv$selected_params,
+      create_param_df()
+    ) %>%
+      dplyr::mutate(hour = lubridate::hour(lubridate::ymd_hms(date_time))) %>%
+      dplyr::mutate(hour = (hour + input$shift_zt) %% 24) %>%
+      add_groups(get_groups()) %>%
+      summarise_groups_bool(input$individual_grouped_select,
+                            filter = T,
+                            rv$selected_subjects) %>%
+      filter_periods(c(input$select_dark, input$select_light))
+    return(aggregated_df)
+  }
+)
 
 
 select_parameters = observe({
