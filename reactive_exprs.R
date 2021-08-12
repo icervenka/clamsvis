@@ -329,6 +329,36 @@ valid_freq = eventReactive(
     return(get_valid_time_agg(rv$global_frequency, get_phase_durations())$values)
 })
 
+phase_align = eventReactive(read_data(), {
+  print("reactive::phase_align")
+  read_data() %>%
+    dplyr::group_by(subject) %>%
+    dplyr::mutate(interval = dplyr::row_number()) %>%
+    tidyr::nest() %>%
+    dplyr::mutate(
+      first_night_interval = purrr::map_dbl(data, . %>%
+                                              dplyr::filter(light == 0) %>%
+                                              dplyr::top_n(1, -interval) %>%
+                                              dplyr::select(interval) %>%
+                                              as.numeric()),
+      no_records = purrr::map_dbl(data, . %>%
+                                    dplyr::count() %>%
+                                    as.numeric()),
+      cropped_records = purrr::map2_dbl(.x = data, .y = first_night_interval, function(x, y) {
+        (x %>% dplyr::count() %>% as.numeric()) + 1 - y
+      })
+    ) %>%
+    dplyr::mutate(cropped = purrr::modify2(data, first_night_interval, function(x, y, mm) {
+      x %>%
+        dplyr::filter(interval >= y & interval <= (mm + y)) %>%
+        dplyr::mutate(interval = dplyr::row_number())
+    }, mm = min(cropped_records))) %>%
+    dplyr::select(subject, cropped) %>%
+    tidyr::unnest(cols = c(cropped)) %>%
+    dplyr::group_by(subject) %>%
+    dplyr::mutate(period = cumsum(c(1, diff(light) != 0)))
+})
+
 select_parameters = observe({
   print("parameters_running")
   num_parameters = rv_filters$counter
