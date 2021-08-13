@@ -359,6 +359,18 @@ phase_align = eventReactive(read_data(), {
     dplyr::mutate(period = cumsum(c(1, diff(light) != 0)))
 })
 
+shinyjs::onclick("preview_data", shinyjs::toggle(id = "prev_div"))
+
+get_data_agg_combined = reactive({
+  print("reactive::get_data_agg_combined")
+  agg = create_aggregation_df(
+    get_phase_durations(),
+    rv$global_frequency,
+    sum(phase_align()$subject == phase_align()$subject[1])
+  )
+  return(cbind.data.frame(phase_align(), agg))
+})
+
 aggregate_summary = reactive(
   # {
   #   rv$selected_params
@@ -533,91 +545,19 @@ aggregate_circadian_table = reactive(
   }
 )
 
-
-select_parameters = observe({
-  print("parameters_running")
-  num_parameters = rv_filters$counter
-  selected_parameters = lapply(1:num_parameters, function(x) {input[[paste0("select_parameter_", x)]]}) %>%
-    unlist(recursive = TRUE) %>%
-    unique
-  rv_filters$parameters = selected_parameters
-
+# notifications ------
+observeEvent(input$update_groups_input, {
+    showNotification("Groups updated",
+      duration = 2,
+      closeButton = F,
+      type = "message"
+  )
 })
 
-update_aggregated_filters = function(df) {
-  rv_filters$max_interval = max(df$interval)
-  rv_filters$dark_periods = df %>% filter(light == 0) %>% select(period) %>% unique %>% pull
-  rv_filters$light_periods = df %>% filter(light == 1) %>% select(period) %>% unique %>% pull
-}
-
-map_aggregate= function(params, data, time) {
-  df = map_dfr(params,
-          ~ aggregate_parameter(data,
-                                paste0("t", time),
-                                .x))
-  df$param = factor(df$param, levels = unique(df$param))
-  return(df)
-}
-
-
-aggregate_individuals = eventReactive(c(rv_filters$parameters, rv_data$data_agg, input$select_aggregation), ignoreNULL = TRUE, {
-  print("individuals_running_1")
-  aggregated_df = map_aggregate(rv_filters$parameters, rv_data$data_agg, input$select_aggregation)
-  update_aggregated_filters(aggregated_df)
-  print("individuals_running_2")
-  return(aggregated_df)
+observeEvent(input$update_groups_file, {
+  showNotification("Groups updated",
+                   duration = 2,
+                   closeButton = F,
+                   type = "message"
+  )
 })
-
-aggregate_scatter = reactive({
-  print("scatter_running")
-  aggregated_df = map_aggregate(rv_data$parameters, rv_data$data_agg, input$select_aggregation)
-  update_aggregated_filters(aggregated_df)
-  return(aggregated_df)
-})
-
-aggregate_hour = reactive({
-  print("hour_running")
-  aggregated_df = map_aggregate(rv_filters$parameters, rv_data$data_agg, "60")
-  setDT(aggregated_df)[, "hour" := hour(ymd_hms(date_time))]
-  setDT(aggregated_df)[, "hour" := (hour+input$shift_zt)%%24]
-  update_aggregated_filters(aggregated_df)
-  return(aggregated_df)
-})
-
-parse_groups = observe({
-  group_df = parse_group_inputs(input)
-  rv_data$group_df = group_df
-  print("parse_groups_running")
-})
-
-add_groups = function(df) {
-  if(dim(rv_data$group_df)[1] > 0) {
-    print("groups_running")
-    ag = merge(df, rv_data$group_df, by = "subject")
-
-    ag =  ag %>%
-      group_by_at(vars(-subject, -date_time, -mean)) %>%
-      summarise(sd = sd(mean), mean = mean(mean))
-    print(ag)
-  }
-  return(ag)
-}
-
-filter_subjects = function(df, subjects) {
-  df %>%
-    dplyr::filter(subject %in% subjects)
-}
-
-filter_intervals = function(df, min, max) {
-  df %>% dplyr::filter(interval >= min, interval <= max)
-}
-
-filter_periods = function(df, periods) {
-  df %>% dplyr::filter(period %in% periods)
-}
-
-render_plot = function(out_plot) {
-  plotlyOutput(out_plot) #,
-               # height = input$plot_height * rv_options$height_multiplier,
-               # width = input$plot_width)
-}
