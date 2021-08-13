@@ -329,6 +329,29 @@ valid_freq = eventReactive(
     return(get_valid_time_agg(rv$global_frequency, get_phase_durations())$values)
 })
 
+# reactive setters ------
+set_global_frequency = observeEvent(phase_align(), {
+  print("reactive::set_global_freq")
+  rv$global_frequency = find_frequencies(read_data(), subject, date_time)
+})
+
+# read and process data ------
+read_data = eventReactive(input$load_file,
+                          {
+                            # if(file_type() == "custom") {
+                            #   df = read.csv(input$file$datapath, header = T)
+                            # } else if(!is.null(file_type())) {
+                            #   df = parse_file(input$file$datapath, parse_patterns[[file_type()]])
+                            # }
+                            print("reactive::read_data")
+                            df = parse_file(input$file$datapath, parse_patterns[["clams"]])
+                            df = df %>%
+                              prettify_data(create_param_df(), file_type())
+                            return(df)
+                          },
+                          ignoreNULL = T
+)
+
 phase_align = eventReactive(read_data(), {
   print("reactive::phase_align")
   read_data() %>%
